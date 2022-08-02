@@ -11,11 +11,8 @@ improvements that could be made.
 **Authorship.** Many students and teaching assistants have contributed to these
 solutions. The primary maintainer is Michael R. Clarkson.
 
-**Contributions.** We are happy to add or correct solutions. If you find any
-errors or missing answers in these solutions, please create a pull request. By
-doing so, you are understood to assign copyright to Michael R. Clarkson, and to
-agree to the licensing of your contribution under the same terms as the rest of
-the solutions.
+**Contributions.** Your contributions are welcome. Please see [CONTRIBUTING](CONTRIBUTING)
+for details.
 
 **Copyright 2022 Michael R. Clarkson.** Released under the <a rel="license"
 href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons
