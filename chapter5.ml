@@ -436,7 +436,6 @@ end
 
 module RingOfPreRing (R:PreRing) = (struct
   include R
-  open R
   let of_int n =
     let two = one + one in
     (* [loop n b x] is [nb + x] *)
