@@ -171,66 +171,101 @@
 
  (* [insert_first d n] mutates dlist [d] by
   * inserting node [n] as the first node. *)
- let insert_first (d: 'a dlist) (n: 'a node) : unit =
-   let () =
-     match d.first with
-     | None -> ()
-     | Some f -> f.prev <- Some n in
-   n.next <- d.first;
-   d.first <- Some n
+let insert_first (d: 'a dlist) (n: 'a node): unit =
+    let () =
+    match d.first with
+    | None ->
+        d.last <- Some n;
+    | Some f ->
+        n.next <- d.first;
+        f.prev <- Some n
+    in
+    d.first <- Some n
 
  (* [insert_last d n] mutates dlist [d] by
   * inserting node [n] as the last node. *)
- let insert_last (d: 'a dlist) (n: 'a node) : unit =
-   n.prev <- d.last;
-   d.last <- Some n
+let insert_last (d: 'a dlist) (n: 'a node): unit =
+    let () =
+    match d.last with
+    | None ->
+        d.first <- Some n
+    | Some l ->
+        l.next <- Some n;
+        n.prev <- d.last
+    in
+    d.last <- Some n
 
  (* [insert_after d n1 n2] mutates dlist [d] by
   * inserting node [n2] after node [n1]. *)
- let insert_after (d: 'a dlist) (n1: 'a node) (n2: 'a node) : unit =
-   let m = ref d.first in
-   while !m <> None do
-     match !m with
-     | None -> raise Not_found
-     | Some x -> if x = n1 then
-         begin match x.next with
-           | None -> x.next <- Some n2; d.last <- Some n2
-           | Some y -> y.prev <- Some n2; x.next <- Some n2
-         end
-       else (); m := x.next
-   done
+let insert_after (d: 'a dlist) (n1: 'a node) (n2: 'a node): unit =
+    match d.first with
+    | None -> raise Not_found
+    | Some f -> begin
+        let m: 'a node ref = ref f in
+        while !m.value <> n1.value do
+             match !m.next with
+             | None -> raise Not_found
+             | Some n -> m := n
+        done;
+        match !m.next with
+        | None -> begin
+            !m.next <- Some n2;
+            n2.prev <- Some !m;
+            d.last <- Some n2
+        end
+        | Some next_n -> begin
+            !m.next <- Some n2;
+            next_n.prev <- Some n2;
+            n2.prev <- Some !m;
+            n2.next <- Some next_n
+        end
+    end
 
  (* [insert_before d n1 n2] mutates dlist [d] by
   * inserting node [n2] before node [n1]. *)
- let insert_before (d: 'a dlist) (n1: 'a node) (n2: 'a node) : unit =
-   let m = ref d.first in
-   while !m <> None do
-     match !m with
-     | None -> raise Not_found
-     | Some x -> if x = n1 then
-         begin match x.prev with
-           | None -> x.prev <- Some n2; d.first <- Some n2
-           | Some y -> y.next <- Some n2; x.prev <- Some n2
-         end
-       else (); m := x.next
-   done
+let insert_before (d: 'a dlist) (n1: 'a node) (n2: 'a node): unit =
+    match d.last with
+    | None -> raise Not_found
+    | Some l -> begin
+        let m: 'a node ref = ref l in
+        while !m.value <> n1.value do
+             match !m.prev with
+             | None -> raise Not_found
+             | Some n -> m := n
+        done;
+        match !m.prev with
+        | None -> begin
+            !m.prev <- Some n2;
+            n2.next <- Some !m;
+            d.first <- Some n2
+        end
+        | Some prev_n -> begin
+            !m.prev <- Some n2;
+            prev_n.next <- Some n2;
+            n2.next <- Some !m;
+            n2.prev <- Some prev_n
+        end
+    end
 
  (* [remove d n] mutates dlist [d] by removing node [n].
   * requires: [n] is a node of [d]. *)
- let remove (d: 'a dlist) (n: 'a node) : unit =
-   let m = ref d.first in
-   while !m <> None do
-     match !m with
-     | None -> raise Not_found
-     | Some x -> if x = n then
-         begin match x.prev, x.next with
-           | None, None -> d.first <- None; d.last <- None
-           | Some y, None -> d.last <- Some y; y.next <- None
-           | None, Some z -> d.first <- Some z; z.prev <- None
-           | Some y, Some z -> y.next <- Some z; z.prev <- Some y
-         end
-       else (); m := x.next
-   done
+let remove (d: 'a dlist) (n: 'a node): unit =
+    match d.first with
+    | None -> raise Not_found
+    | Some f -> begin
+        let x: 'a node ref = ref f in
+        while !x.value <> n.value do
+            match !x.next with
+            | None -> raise Not_found
+            | Some n_next -> x := n_next
+        done;
+        begin match !x.prev, !x.next with
+            | None, None -> d.first <- None; d.last <- None
+            | Some y, None -> d.last <- Some y; y.next <- None
+            | None, Some z -> d.first <- Some z; z.prev <- None
+            | Some y, Some z -> y.next <- Some z; z.prev <- Some y
+        end
+    end
 
  (* [iter_forward d f] on a dlist [d] which has
   * elements n1; n2; ... is (f n1); (f n2); ... *)
