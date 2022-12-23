@@ -104,8 +104,9 @@ let _ = assert (close_enough (area (Float.sqrt (1. /. Float.pi))) 1.)
  * exercise: RMS
  ********************************************************************)
 
-let rms x y = sqrt((x *. x +. y *. y) /. 2.)
-(* assert (abs_float (rms 2. 2. -. 2.) < 1e-5) *)
+let rms x y = sqrt ((x *. x +. y *. y) /. 2.)
+let _ = assert (close_enough (rms 2. 2.) 2.)
+let _ = assert (close_enough (rms 7. 42.) 30.10813)
 
 (********************************************************************
  * exercise: date fun
