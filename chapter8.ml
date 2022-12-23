@@ -544,6 +544,30 @@ let rec pow2from n =
 let pow2 = pow2from 1
 
 (********************************************************************
+ * exercise: more sequences
+ ********************************************************************)
+
+(** Even naturals **)
+
+(* [from_skip n k] is the sequnce <n; n + 1*k, n + 2*k; ...>*)
+let rec from_skip n k =
+  Cons (n, fun () -> from_skip (n + k) k)
+
+let evens = from_skip 0 2
+
+(** Lower case alphabet **)
+
+let rec alphabet_gen n  =
+  Cons (Char.chr ((n mod 26) + Char.code 'a'), 
+        fun () -> alphabet_gen (n + 1))
+
+let alphabet = alphabet_gen 0
+
+(** Coin flip **)
+let rec flips_gen next = Cons (next, fun () -> flips_gen (Random.bool ()))
+let flips = Random.self_init (); flips_gen (Random.bool ())
+
+(********************************************************************
  * exercise: nth
  ********************************************************************)
 
