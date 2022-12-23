@@ -814,26 +814,97 @@ if you'd like to contribute to the community!
  exercise: infer apply
 *******************************************************************
 
-No solution available at this time.  Email the professor yours
-if you'd like to contribute to the community!
+let apply f x = f x
 
+let apply = fun f -> fun x -> f x
+
+I |- fun f -> fun x -> f x : ‘a -> ‘b -> ‘c -| ‘a = ‘b -> ‘c
+	I, f: ‘a |- fun x -> f x : ‘b -> ‘c -| ‘a = ‘b -> ‘c
+		I, f: ‘a, x: ‘b |- f x : ‘c -| ‘a = ‘b -> ‘c
+			I, f: ‘a, x: ‘b |- f : ‘a -| {}
+			I, f: ‘a, x: ‘b |- x : ‘b -| {}
+
+unify(‘a = ‘b -> ‘c) 
+=
+{‘b -> ‘c / ‘a} unify()
+= 
+{‘b -> ‘c / ‘a}
+
+‘a -> ‘b -> ‘c becomes (‘b -> ‘c) -> ‘b -> ‘c
+				   
+Inferred Type: (‘a -> ‘b) -> ‘a -> ‘b
 
 *******************************************************************
  exercise: infer double
 *******************************************************************
 
+let double f x = f (f x)
 
-No solution available at this time.  Email the professor yours
-if you'd like to contribute to the community!
+let double = fun f -> fun x -> f (f x)
 
+I |- fun f -> fun x -> f (f x) : ‘a -> ‘b -> ‘d -| ‘a = ‘c -> ‘d, ‘a = ‘b -> ‘c
+	I, f: ‘a |- fun x -> f (f x) : ‘b -> ‘d -| ‘a = ‘c -> ‘d, ‘a = ‘b -> ‘c
+		I, f: ‘a, x: ‘b |- f (f x) : ‘d -| ‘a = ‘c -> ‘d, ‘a = ‘b -> ‘c
+			I, f: ‘a, x: ‘b |- f : ‘a -| {}
+			I, f: ‘a, x: ‘b |- f x : ‘c -| ‘a = ‘b -> ‘c
+				I, f: ‘a, x: ‘b |- f : ‘a -| {}
+				I, f: ‘a, x: ‘b |- x : ‘b -| {}
 
+unify(a = ‘c -> ‘d, ‘a = ‘b -> ‘c)
+= 
+{‘c -> ‘d / ‘a}; unify(‘a = ‘b -> ‘c) {‘c -> ‘d / ‘a}
+= 
+{‘c -> ‘d / ‘a}; unify(‘c -> ‘d = ‘b -> ‘c)
+= 
+{‘c -> ‘d / ‘a}; unify(‘c = ‘b, ‘d = ‘c)
+=
+{‘c -> ‘d / ‘a}; {‘b / ‘c}; unify(‘d = ‘c) {‘b / ‘c}
+= 
+{‘c -> ‘d / ‘a}; {‘b / ‘c}; unify(‘d = ‘b)
+= 
+{‘c -> ‘d / ‘a}; {‘b / ‘c}; {‘b / ‘d}
+
+‘a -> ‘b -> ‘d becomes (‘c -> ‘d) -> ‘b -> ‘d
+			becomes (‘b -> ‘d) -> ‘b -> ‘d
+			becomes (‘b -> ‘b) -> ‘b -> ‘b
+
+Inferred Type: (‘a -> ‘a) -> ‘a -> ‘a
 
 *******************************************************************
  exercise: infer S
 *******************************************************************
 
-No solution available at this time.  Email the professor yours
-if you'd like to contribute to the community!
+let s x y z = (x z) (y z)
+
+let s = fun x -> fun y -> fun z -> (x z) (y z)
+
+I |- fun x -> fun y -> fun z -> (x z) (y z) : ‘a -> ‘b -> ‘c -> ‘f -| ‘e = ‘d -> ‘f, ‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d
+	I, x: ‘a |- fun y -> fun z -> (x z) (y z) : ‘b -> ‘c -> ‘f -| ‘e = ‘d -> ‘f, ‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d
+		I, x: ‘a, y: ‘b |- fun z -> (x z) (y z) : ‘c -> ‘f -| ‘e = ‘d -> ‘f, ‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d
+			I, x: ‘a, y: ‘b, z: ‘c |- (x z) (y z) : ‘f -| ‘e = ‘d -> ‘f, ‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d
+				I, x: ‘a, y: ‘b, z: ‘c |- (x z) : ‘e -| ‘a = ‘c -> ‘e
+					I, x: ‘a, y: ‘b, z: ‘c |- x : ‘a -| {}
+					I, x: ‘a, y: ‘b, z: ‘c |- z : ‘c -| {}
+				I, x: ‘a, y: ‘b, z: ‘c |- (y z) : ‘d -| ‘b = ‘c -> ‘d
+					I, x: ‘a, y: ‘b, z: ‘c |- y : ‘b -| {}
+					I, x: ‘a, y: ‘b, z: ‘c |- z : ‘c -| {}
+
+unify(‘e = ‘d -> ‘f, ‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d)
+= 
+{‘d -> ‘f / ‘e}; unify(‘a = ‘c -> ‘e, ‘b = ‘c -> ‘d){‘d -> ‘f / ‘e}
+=
+{‘d -> ‘f / ‘e}; unify(‘a = ‘c -> (‘d -> ‘f), ‘b = ‘c -> ‘d)
+= 
+{‘d -> ‘f / ‘e}; {‘c -> (‘d -> ‘f) / ‘a}; unify(‘b = ‘c -> ‘d){‘c -> (‘d -> ‘f) / ‘a}
+=
+{‘d -> ‘f / ‘e}; {‘c -> (‘d -> ‘f) / ‘a}; {‘c -> ‘d / ‘b}
+
+
+(‘a -> ‘b -> ‘c -> ‘f) becomes (‘c -> (‘d -> ‘f)) -> ‘b -> ‘c -> ‘f
+				   becomes (‘c -> ‘d -> ‘f) -> (‘c -> ‘d) -> ‘c -> ‘f
+
+Inferred Type: (‘a -> ‘b -> ‘c) -> (‘a -> ‘b) -> ‘a -> ‘c
+
 
 
 *)
