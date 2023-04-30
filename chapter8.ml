@@ -1139,7 +1139,7 @@ struct
 
   let (>>|) m f =
     match m with
-    | Some x -> return (f x)
+    | Some x -> Some (f x)
     | None -> None
 
   let join = function
