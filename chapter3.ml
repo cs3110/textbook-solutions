@@ -26,6 +26,17 @@ let rec product' = function
   | h :: t -> h * product' t
 
 (********************************************************************
+ * exercise: concat
+ ********************************************************************)
+
+(* returns: the concatenation of all the strings in list, or the
+ *   empty string if list is empty.
+*)
+let rec concat = function
+  | [] -> ""
+  | h :: t -> h ^ concat t
+
+(********************************************************************
  * exercise: patterns
  ********************************************************************)
 
@@ -69,6 +80,24 @@ let sort_list_descending lst =
 *)
 let sort_list_descending' lst = 
   lst |> List.sort Stdlib.compare |> List.rev 
+
+(*
+* test cases for the above function, using the [assert] function
+*)
+let test_fifth_element () =
+  assert (fifth_element [1; 2; 3; 4; 5; 6] = 5);
+  assert (fifth_element [1; 2; 3; 4] = 0);
+  assert (fifth_element [] = 0);
+  print_endline "fifth_element tests passed"
+
+let test_sort_list_descending () =
+  assert (sort_list_descending [1; 2; 3; 4; 5; 6] = [6; 5; 4; 3; 2; 1]);
+  assert (sort_list_descending [1; 2; 3; 4] = [4; 3; 2; 1]);
+  assert (sort_list_descending [] = []);
+  print_endline "sort_list_descending tests passed"
+
+let _ = test_fifth_element ()
+let _ = test_sort_list_descending ()
 
 (********************************************************************
  * exercise: library puzzle
