@@ -1,508 +1,496 @@
 (********************************************************************
- * exercise: complex synonym
+ * exercise: list expressions
  ********************************************************************)
 
-module type ComplexSig = sig
-  type t = float * float
-  val zero : t
-  val add : t -> t -> t
-end
+let lst1 = [1; 2; 3; 4; 5]
+let lst2 = 1 :: 2 :: 3 :: 4 :: 5 :: []
+let lst3 = [1] @ [2; 3; 4] @ [5]
 
 (********************************************************************
- * exercise: complex encapsulation
+ * exercise: product
  ********************************************************************)
 
-module Complex : ComplexSig = struct
-  type t = float * float
-  let zero = (0., 0.)
-  let add (r1,i1) (r2,i2) = r1 +. r2, i1 +. i2
-end
+(* returns: the product of all the elements of [lst], or [1] if [lst]
+ *   is empty. 
+*)
+let rec product lst =
+  match lst with
+  | [] ->  1
+  | h :: t -> h * product t
 
+(* Here's a simpler way to write that using the [function] syntactic sugar
+ *   discussed in the notes...
+*)
+let rec product' = function
+  | [] ->  1
+  | h :: t -> h * product' t
+
+(********************************************************************
+ * exercise: patterns
+ ********************************************************************)
+
+(* returns:  whether the first element of the input is ["bigred"] 
+*)
+let first_is_bigred = function
+  | [] -> false
+  | h :: _ -> h = "bigred"
+
+(* returns:  whether the input has exactly two or four elements 
+*)
+let two_or_four_elements = function
+  | _ :: _ :: [] -> true
+  | _ :: _ :: _ :: _ :: [] -> true
+  | _ -> false
+
+(* returns: whether the first two elements of the input are equal 
+*)
+let eq_first_two = function
+  | a :: b :: _ -> a = b
+  | _ -> false
+
+(********************************************************************
+ * exercise: library
+ ********************************************************************)
+
+(* returns:  the fifth element of the input list, or zero if the 
+ *   list is empty 
+*)
+let fifth_element lst =
+  if (List.length lst) >= 5 then List.nth lst 4 else 0
+
+(* returns: the input list, sorted in descending order 
+*)
+let sort_list_descending lst = 
+  List.rev (List.sort Stdlib.compare lst)
+
+(* A more idiomatic way to write the above function is 
+ *   with the pipeline operator.  This makes use of 
+ *   partial application with List.sort. 
+*)
+let sort_list_descending' lst = 
+  lst |> List.sort Stdlib.compare |> List.rev 
+
+(********************************************************************
+ * exercise: library puzzle
+ ********************************************************************)
+
+(* returns: the last element of [lst]
+ * requires: [lst] is nonempty
+*)
+let last_element lst = 
+  List.nth lst (List.length lst - 1)
+
+(* another solution... 
+*)
+let last_element' lst = 
+  lst |> List.rev |> List.hd
+
+(* returns: whether [lst] contains any zeros
+*)
+let any_zeros lst = 
+  List.exists (fun x -> x = 0) lst
+
+(********************************************************************
+ * exercise: take drop
+ ********************************************************************)
+
+(* returns:  [take n lst] is the first [n] elements of [lst], or
+ *   just [lst] if [lst] has fewer than [n] elements. 
+ * requires: [n >= 0]
+*)
+let rec take n lst =
+  if n = 0 then [] else match lst with
+    | [] -> []
+    | x :: xs -> x :: take (n - 1) xs
+
+(* returns:  [drop n lst] is all but the first [n] elements of [lst],
+ *   or just [[]] if [lst] has fewer than [n] elements.
+ * requires: [n >= 0]
+*)
+let rec drop n lst =
+  if n = 0 then lst else match lst with
+    | [] -> []
+    | x :: xs -> drop (n - 1) xs
+
+(********************************************************************
+ * exercise: take drop tail
+ ********************************************************************)
+
+(* returns: [take_rev n xs acc] is [lst1 @ acc], where [lst] is
+ *   the first [n] elements of [xs] (or just [xs] if [xs] has 
+ *   fewer than [n] elements) in reverse order. 
+ * requires: [n >= 0] *)
+let rec take_rev n xs acc = 
+  if n = 0 then acc else match xs with
+    | [] -> acc
+    | x :: xs' -> take_rev (n - 1) xs' (x :: acc)
+
+(* returns:  [take n lst] is the first [n] elements of [lst], or
+ *   just [lst] if [lst] has fewer than [n] elements. 
+ * requires: [n >= 0]
+*)
+let take_tr n lst =
+  take_rev n lst [] |> List.rev
+
+(* In the solution above, we factored out a helper function called
+ * [take_rev].  It is tail recursive.  The helper function takes
+ * the same arguments as the original function, and one additional
+ * argument [acc] called an *accumulator*.  We accumulate the answer
+ * in it, eventually returning it when either [xs] is empty
+ * or [n] is 0.  This is a general recipe one can follow in making
+ * any recursive function be tail recursive. That same recipe was
+ * followed in creating the definition of [(--)] below. *)
+
+(* the "natural" solution to [drop] above is already tail recursive *)
+let drop_tr = drop
+
+(* returns:  [from i j l] is the list containing the integers from
+ *   [i] to [j], inclusive, followed by the list [l].
+ * example:  [from 1 3 [0] = [1;2;3;0]] *)
+let rec from i j l =
+  if i > j then l
+  else from i (j - 1) (j :: l)
+
+(* returns:  [i -- j] is the list containing the integers from
+ *   [i] to [j], inclusive.
+*) 
+let (--) i j =
+  from i j []
+
+let longlist = 0 -- 1_000_000
+
+(* [take 1_000_000 longlist] should produce a stack overflow,
+ * but [take_tr 1_000_000 longlist] should not. *)
+
+(********************************************************************
+ * exercise: unimodal
+ ********************************************************************)
+
+(** returns: whether the input list is monotonically decreasing *)
+let rec is_mon_dec = function
+  | [] | [_] -> true
+  | h1 :: (h2 :: t2 as t) -> 
+    h1 >= h2 && is_mon_dec t
+
+(** returns: whether the input list is monotonically increasing
+    then monotonically decreasing *)
+let rec is_mon_inc_then_dec = function
+  | [] | [_] -> true
+  | h1 :: (h2 :: t2 as t) as lst -> 
+    if h1 <= h2 then is_mon_inc_then_dec t else is_mon_dec lst
+
+let is_unimodal lst = 
+  is_mon_inc_then_dec lst
+
+(********************************************************************
+ * exercise: powerset
+ ********************************************************************)
+
+(* returns: [powerset s] is the list representing the set of all subsets of s
+ * requires: [s] is a set-like list (no duplicate elements) *)
+let rec powerset = function
+  | [] -> [ [] ]
+  | x :: s -> let p = powerset s in
+    List.map (List.cons x) p @ p
+
+(********************************************************************
+ * exercise: print int list rec
+ ********************************************************************)
+
+(* effects: prints all elements in the given list on a separate line *)
+let rec print_int_list = function
+  | [] -> ()
+  | hd :: tl -> print_endline (string_of_int hd); print_int_list tl
+
+(********************************************************************
+ * exercise: print int list iter
+ ********************************************************************)
+
+(* effects: prints all elements in [lst] on a separate line *)
+let print_int_list' lst =
+  List.iter (fun x -> print_endline (string_of_int x)) lst
+
+(********************************************************************
+ * exercise: student
+ ********************************************************************)
+
+(* we are given this type *)
+type student = { first_name : string ; last_name : string ; gpa : float }
+
+(* expression with type [student] *)
+let s =
+  { first_name = "Ezra"; last_name = "Cornell"; gpa = 4.3 }
+
+(* expression with type [student -> string * string] *)
+let get_full_name student =
+  student.first_name, student.last_name
+
+(* expression with type [string -> string -> float -> student] *)
+let make_stud first last g =
+  { first_name = first; last_name = last; gpa=g }
+
+
+(********************************************************************
+ * exercise: pokerecord
+ ********************************************************************)
+
+type poketype = Normal | Fire | Water
+
+(* define the type pokemon record *)
+type pokemon = { name : string ; hp : int ; ptype : poketype }
+
+let charizard = { name = "charizard"; hp = 78; ptype = Fire }
+
+let squirtle = { name = "squirtle"; hp = 44; ptype = Water }
+
+(********************************************************************
+ * exercise: safe hd and tl
+ ********************************************************************)
+
+(* returns: [Some x] if the head of [lst] is [x], or [None]
+ *   if [lst] is empty.
+*)
+let safe_hd = function
+  | [] -> None
+  | h::_ -> Some h
+
+(* returns: [Some x] if the tail of [lst] is [x], or [None]
+ *   if [lst] is empty.
+*)
+let safe_tl = function
+  | [] -> None
+  | _::t -> Some t
+
+
+(********************************************************************
+ * exercise: pokefun
+ ********************************************************************)
+
+(* returns: [Some pokemon] if [pokemon] has the highest [hp] in the
+ *   given list, or [None] if the list is empty.
+*)
+let rec max_hp = function
+  | [] -> None
+  | poke1::t -> begin
+      match max_hp t with
+      | None -> Some poke1
+      | Some poke2 -> Some (if poke1.hp >= poke2.hp then poke1 else poke2)
+    end
+
+
+(********************************************************************
+ * exercise: date before
+ ********************************************************************)
+
+type date = int * int * int
+
+(* returns: true if [date1] comes strictly before [date2];
+ *   false otherwise
+ * requires: [date1] and [date2] are valid date triples
+*)
+let is_before date1 date2 =
+  let (y1, m1, d1) = date1 in
+  let (y2, m2, d2) = date2 in
+  y1 < y2 || (y1 = y2 && m1 < m2) || (y1 = y2 && m1 = m2 && d1 < d2)
+
+
+(********************************************************************
+ * exercise: earliest date
+ ********************************************************************)
+
+(* returns: [Some d] if [d] is the earliest date in the given list,
+ *   or [None] if the list is empty.
+*)
+let rec earliest = function
+  | [] -> None
+  | d1::t -> begin
+      match earliest t with
+      | None -> Some d1
+      | Some d2 -> Some (if is_before d1 d2 then d1 else d2)
+    end
+
+
+(********************************************************************
+ * exercise: assoc list
+ ********************************************************************)
+
+(* insert a binding from key k to value v in association list d *)
+let insert k v d = (k,v)::d
+
+(* find the value v to which key k is bound, if any, in the assocation list *)
+let rec lookup k = function
+  | [] -> None
+  | (k',v)::t -> if k=k' then Some v else lookup k t
+
+let dict = insert 3 "three" (insert 2 "two" (insert 1 "one" []))
+let some_two = lookup 2 dict
+let none = lookup 4 dict
+
+(********************************************************************
+ * exercise: cards
+ ********************************************************************)
+
+type suit = Hearts | Spades | Clubs | Diamonds
+
+type rank = Number of int | Ace | Jack | Queen | King
+
+type card = { suit: suit; rank: rank }
+
+let ace_of_clubs : card = { suit = Clubs; rank = Ace }
+let queen_of_hearts : card = { suit = Hearts; rank = Queen }
+let two_of_diamonds : card = { suit = Diamonds; rank = Number 2 }
+let seven_of_spades : card = { suit = Spades; rank = Number 7 }
+
+
+(********************************************************************
+ * exercise: matching
+ ********************************************************************)
+
+(* (Some x)::tl *)
+let lst1 : int option list = [None; Some 0]
+(* [Some 3110; None] *)
+let lst2 : int option list = [Some 3410; None]
+(* [Some x; _] *)
+let lst3 : int option list = [None; Some 0]
+(* h1::h2::tl *)
+let lst4 : int option list = [Some 0]
+(* h :: tl *)
+(* Impossible. This matches any list of non-zero length regardless of type.
+ * The only way to NOT match this expression is the empty list []. *)
+
+
+(********************************************************************
+ * exercise: quadrant
+ ********************************************************************)
+
+type quad = I | II | III | IV
+type sign = Neg | Zero | Pos
+
+(** [sign x] is [Zero] if [x = 0]; [Pos] if [x > 0]; and [Neg] if [x < 0]. *)
+let sign x =
+  if x = 0 then Zero
+  else if x > 0 then Pos
+  else Neg
+
+(** [quadrant (x,y)] is [Some q] if [(x, y)] lies in quadrant [q], or [None] if
+    it lies on an axis. *)
+let quadrant (x,y) =
+  match sign x, sign y with
+  | Pos, Pos -> Some I
+  | Neg, Pos -> Some II
+  | Neg, Neg -> Some III
+  | Pos, Neg -> Some IV
+  | _ -> None
+
+
+(********************************************************************
+ * exercise: quadrant when
+ ********************************************************************)
+
+(** [quadrant_when (x,y)] is [Some q] if [(x, y)] lies in quadrant [q], 
+    or [None] if it lies on an axis. *)
+let quadrant_when = function
+  | x,y when x > 0 && y > 0 -> Some I
+  | x,y when x < 0 && y > 0 -> Some II
+  | x,y when x < 0 && y < 0 -> Some III
+  | x,y when x > 0 && y < 0 -> Some IV
+  | _ -> None
+
+
+(********************************************************************
+ * exercise: depth
+ ********************************************************************)
+
+type 'a tree = Leaf | Node of 'a * 'a tree * 'a tree
+
+(** [depth t] is the number of nodes in any longest path from the root to a 
+    leaf in tree [t]. *)
+let rec depth = function
+  | Leaf -> 0
+  | Node (_, left, right) -> 1 + max (depth left) (depth right)
+
+
+(********************************************************************
+ * exercise: shape
+ ********************************************************************)
+
+(** [same_shape t1 t2] is [true] if and only if [t1] and [t2] have the same
+    shape. *)
+let rec same_shape t1 t2 =
+  match t1, t2 with
+  | Leaf, Leaf -> true
+  | Node (_,l1,r1), Node (_,l2,r2) -> (same_shape l1 l2) && (same_shape r1 r2)
+  | _ -> false
+
+
+(********************************************************************
+ * exercise: list max exn
+ ********************************************************************)
+
+(** [list_max_safe x xs] is [x] if [xs] is empty, and otherwise
+    is the maximum element of [x::xs]. *)
+let rec list_max_safe x = function
+  | [] -> x
+  | h::t -> list_max_safe (Stdlib.max x h) t
+
+(** [list_max lst] is the maximum element of [lst] as determined by
+    [Stdlib.max].
+    Raises:  [Failure "empty"] if [lst] is empty. *)
+let list_max = function
+  | [] -> failwith "list_max"
+  | h::t -> list_max_safe h t
+
+(********************************************************************
+ * exercise: list max exn string
+ ********************************************************************)
+
+(* returns: [list_max_string lst] is the string representing the maximum
+ *   integer in [lst].
+ * raises: [Failure "list_max_string"] if [lst] is empty.
+*)
+let list_max_string lst =
+  try string_of_int (list_max lst) with
+  | Failure _ -> "empty"
+
+(********************************************************************
+ * exercise: list max exn ounit
+ ********************************************************************)
+
+(* you'll need to put this code in a separate file, as usual, to run the tests *)
 (*
-- remove `zero` from the structure:
-  Signature mismatch: The value `zero' is required but not provided.
-- remove `add` from the signature:
-  No error, but now clients can't add complex numbers.
-- change `zero` in the structure to `let zero = 0, 0`:
-  Signature mismatch: Values do not match:
-    val zero : int * int
-    is not included in
-    val zero : t
+open OUnit2
+
+let tests = "suite" >::: [
+  "empty" >:: (fun _ -> assert_raises (Failure "list_max") (fun () -> list_max []));
+  "nonempty" >:: (fun _ -> assert_equal 8 (list_max [3; 1; 4; 8]))
+]
+
+let _ = run_test_tt_main tests
 *)
 
 (********************************************************************
- * exercise: big list queue
+ * exercise: quadrant poly
  ********************************************************************)
 
-module ListQueue = struct
-  type 'a queue = 'a list
+(* although the compiler will infer the output types manually
+ * annotated below, we include them anyway in the solution just
+ * so that you can see them here. *)
 
-  let empty = []
+let sign_poly x : [> `Neg | `Pos | `Zero] =
+  if x < 0 then `Neg
+  else if x = 0 then `Zero
+  else `Pos
 
-  let is_empty q = (q = [])
-
-  let enqueue x q = q @ [x]
-
-  let peek = function
-    | []   -> failwith "Empty"
-    | x::_ -> x
-
-  let dequeue = function
-    | []   -> failwith "Empty"
-    | _::q -> q
-end
-
-(* returns: a [ListQueue] filled with [n] elements. *)
-let fill_listqueue n =
-  let rec loop n q =
-    if n=0 then q
-    else loop (n-1) (ListQueue.enqueue n q) in
-  loop n ListQueue.empty
-
-(* on one TA's machine, about 20000 elements will bring a delay of
- * at least 10 seconds *)
-
+let quadrant (x,y) : [> `I | `II | `III | `IV ] option =
+  match sign_poly x, sign_poly y with
+  | `Pos, `Pos -> Some `I
+  | `Neg, `Pos -> Some `II
+  | `Neg, `Neg -> Some `III
+  | `Pos, `Neg -> Some `IV
+  | _ -> None
 
 (********************************************************************
- * exercise: big batched queue
+ * exercise: is_bst
  ********************************************************************)
 
-module BatchedQueue = struct
-  type 'a t = {outbox:'a list; inbox:'a list}
-
-  let empty = {outbox=[]; inbox=[]}
-
-  let is_empty = function
-    | {outbox=[]; inbox=[]} -> true
-    | _ -> false
-
-  let norm = function
-    | {outbox=[]; inbox} -> {outbox=List.rev inbox; inbox=[]}
-    | q -> q
-
-  let enqueue x q = norm {q with inbox=x::q.inbox}
-
-  let peek = function
-    | {outbox=[]; _} -> None
-    | {outbox=x::_; _} -> Some x
-
-  let dequeue = function
-    | {outbox=[]; _} -> None
-    | {outbox=_::xs; inbox} -> Some (norm {outbox=xs; inbox})
-end
-
-(* returns: a [BatchedQueue] filled with [n] elements. *)
-let fill_BatchedQueue n =
-  let rec loop n q =
-    if n=0
-    then q
-    else loop (n-1) (BatchedQueue.enqueue n q)
-  in
-  loop n BatchedQueue.empty
-
-(* on one TA's machine, about 50_000_000 elements will bring a delay of
- * at least 10 seconds*)
-
-
-(********************************************************************
- * exercise: queue efficiency
- ********************************************************************)
-
-(* [ListQueue.enqueue] insert each new element at the end of a list,
- * which has to walk down the entire list. This naturally takes time
- * that is linear in the length of the queue. Doing this [n] times,
- * even starting with an empth queue, will take time [1 + 2 + ... + n],
- * which is in [O(n^2)].
- *
- * On the other hand, [BatchedQueue.enqueue] simply uses (::) which runs
- * in constant time (like all constructors) irregardless of the size of
- * the list. Repeating this [n] times will take [O(n)] time.
-*)
-
-(********************************************************************
- * exercise: binary search tree map
- ********************************************************************)
-
-module type Map = sig
-  type ('k, 'v) t
-  val empty  : ('k, 'v) t
-  val insert : 'k -> 'v -> ('k,'v) t -> ('k,'v) t
-  val lookup  : 'k -> ('k,'v) t -> 'v
-end
-
-module BstMap : Map = struct
-  type 'a tree =
-    | Leaf
-    | Node of 'a * 'a tree * 'a tree
-
-  type ('k, 'v) t = ('k * 'v) tree
-
-  let empty =
-    Leaf
-
-  let rec insert k v = function
-    | Leaf -> Node((k, v), Leaf, Leaf)
-    | Node ((k',v'), l, r) ->
-      if (k = k') then Node ((k, v), l, r)
-      else if (k < k') then Node ((k',v'), insert k v l, r)
-      else Node ((k',v'), l, insert k v r)
-
-  let rec lookup k = function
-    | Leaf -> failwith "Not_found"
-    | Node ((k',v'), l, r) ->
-      if (k = k') then v'
-      else if (k < k') then lookup k l
-      else lookup k r
-end
-
-(********************************************************************
- * exercise: fraction
- ********************************************************************)
-
-module type Fraction = sig
-  (* A fraction is a rational number p/q, where q != 0.*)
-  type t
-
-  (* [make n d] is n/d. Requires d != 0. *)
-  val make : int -> int -> t
-
-  val numerator : t -> int
-  val denominator : t -> int
-  val to_string : t -> string
-  val to_float : t -> float
-
-  val add : t -> t -> t
-  val mul : t -> t -> t
-end
-
-module PairFraction = struct
-  type t = int * int
-  let make n d =
-    assert (d != 0);
-    (n,d)
-  let numerator (n,d) = n
-  let denominator (n,d) = d
-  let to_string (n,d) =
-    string_of_int n ^ " / " ^ string_of_int d
-  let to_float (n,d) =
-    float_of_int n /. float_of_int d
-  let add (n1,d1) (n2,d2) =
-    let d' = d1 * d2 in
-    (n1 * d2 + n2 * d1, d')
-  let mul (n1,d1) (n2,d2) =
-    (n1 * n2, d1 * d2)
-end
-
-(********************************************************************
- * exercise: make char map
- ********************************************************************)
-
-(*
- * In the CharMap module, [key] is the type of keys, which
- *   is synonymous with [char], ['a] is the type of values
- *   and [t] is the abstract type of the character map.
- * [empty] is an empty character map. Its type is ['a t] because it is
- *   a map whose value type is not yet known.
- * [add] takes a key of type [key], a value of type ['a], an existing map
- *   of type ['a t], and returns a new map with a binding from that
- *   key to that value.
- * [remove] takes a key of type [key] and an existing map of type ['a t],
- *   and returns a new map without a binding for [key].
- *)
-
-(********************************************************************
- * exercise: char ordered
- ********************************************************************)
-
-(*
- * [Char] matches the [Map.OrderedType] signature because it contains a
- *   type named [t] as well as an ordering function [compare : t -> t -> int].
- *)
-
-
-(********************************************************************
- * exercise: use char map
- ********************************************************************)
-module CharMap = Map.Make(Char)
-let map = CharMap.(
-    empty
-    |> add 'A' "Alpha"
-    |> add 'E' "Echo"
-    |> add 'S' "Sierra"
-    |> add 'V' "Victor"
-  )
-let echo = CharMap.find 'E' map (* "Echo" *)
-let map' = CharMap.remove 'A' map
-let a_exists = CharMap.mem 'A' map' (* false *)
-let bindings = CharMap.bindings map' (* [('E', "Echo"); ('S', "Sierra");
-                                         ('V', "Victor")] *)
-
-(********************************************************************
- * exercise:  bindings
- ********************************************************************)
-(*
- * All three expressions will return the same association list since
- * the association list is sorted based on the keys, not based on
- * insertion order.
- *)
-
-
-(********************************************************************
- * exercise:  date order
- ********************************************************************)
-
-type date = {
-  month : int;
-  day : int
-}
-
-module Date = struct
-  type t = date
-
-  let compare d1 d2 =
-    if d1.month = d2.month then d1.day - d2.day
-    else d1.month - d2.month
-end
-
-
-(********************************************************************
- * exercise: calendar
- ********************************************************************)
-
-module DateMap = Map.Make(Date)
-
-type calendar = string DateMap.t
-
-let my_calendar =
-  DateMap.(empty |>
-           add { month = 2; day = 7 } "e day" |>
-           add { month = 3; day = 14 } "pi day" |>
-           add { month = 6; day = 18 } "phi day" (* according to some *) |>
-           add { month = 10; day = 23 } "mole day" |>
-           add { month = 11; day = 23 } "fibonacci day"
-          )
-
-(********************************************************************
- * exercise: print calendar
- ********************************************************************)
-
-(* effects: prints each entry in a [calendar]; one entry per line *)
-let print_calendar cal =
-  DateMap.iter
-    (fun date event -> Printf.printf "%d/%d: %s\n" date.month date.day event)
-    cal
-
-(********************************************************************
- * exercise: is for
- ********************************************************************)
-
-(* returns: a [CharMap] [m'] that has the same keys as [m], but where each
- * value [v] is replaced by [key ^ " is for " ^ v].
-*)
-let is_for m =
-  CharMap.mapi (fun key v -> Printf.sprintf "%c is for %s" key v) m
-
-(********************************************************************
- * exercise: first after
- ********************************************************************)
-
-let thd (_,_,x) = x
-
-(* returns: the first event in [cal] that comes strictly after [date].
- * raises: [Not_found] is there is no such event
-*)
-let first_after date cal =
-  DateMap.(split date cal |> thd |> min_binding |> snd)
-
-(********************************************************************
- * exercise: ToString
- ********************************************************************)
-
-module type ToString = sig
-  type t
-  val to_string: t -> string
-end
-
-
-(********************************************************************
- * exercise: Print
- ********************************************************************)
-
-module Print (M : ToString) = struct
-  (* effects: print a string representation of [M.t] *)
-  let print v = print_string (M.to_string v)
-end
-
-
-(********************************************************************
- * exercise: Print Int
- ********************************************************************)
-module Int = struct
-  type t = int
-  let to_string = string_of_int
-end
-
-module PrintInt = Print(Int)
-let _ = PrintInt.print 5
-
-(********************************************************************
- * exercise: Print String
- ********************************************************************)
-
-module MyString = struct
-  type t = string
-  let to_string s = s
-end
-
-module PrintString = Print(MyString)
-let _ = PrintString.print "Harambe"
-
-
-(********************************************************************
- * exercise: Print reuse
- ********************************************************************)
-
-(* Functor [Print] wraps the details of printing for us, so each module
- * [M] only has to specify how to turn [M.t] into a string. Specifically,
- * the application of `print_string` has been factored out. That is
- * admittedly a tiny piece of code to factor out!  But if printing
- * required a lot more code to implement, we'd have felt good about this.
-*)
-
-(********************************************************************
- * exercise: sets
- ********************************************************************)
-
-module CisSet = Set.Make(struct
-    type t = string
-    let compare s1 s2 =
-      String.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
-  end)
-
-let _ = CisSet.(equal (of_list ["grr"; "argh"]) (of_list ["GRR"; "aRgh"]))
-
-
-(********************************************************************
- * exercise: Print String reuse revisited
- ********************************************************************)
-module StringWithPrint = struct
-  include String
-  include Print(MyString)
-end
-
-(********************************************************************
- * exercise: printer for date
- ********************************************************************)
-
-(* put this definition in date.ml:
-     let format fmt d = Format.fprintf fmt "%s" (to_string d)
-   now instead of printing <abstr> as the response to [make_date],
-   utop will print the string representation of the date.
-*)
-
-(********************************************************************
- * exercise: refactor arith
- ********************************************************************)
-
-module type PreRing = sig
-  type t
-  val zero  : t
-  val one   : t
-  val (+)   : t -> t -> t
-  val (~-)  : t -> t
-  val ( * ) : t -> t -> t
-  val to_string : t -> string
-end
-
-module type OfInt = sig
-  type t
-  val of_int : int -> t
-end
-
-module type Ring = sig
-  include PreRing
-  include OfInt with type t := t
-end
-
-module type PreField = sig
-  include PreRing
-  val (/) : t -> t -> t
-end
-
-module type Field = sig
-  include PreField
-  include OfInt with type t := t
-end
-
-module RingOfPreRing (R:PreRing) = (struct
-  include R
-  let of_int n =
-    let two = one + one in
-    (* [loop n b x] is [nb + x] *)
-    let rec loop n b x =
-      if n=0 then x
-      else loop Stdlib.(n/2) (b*two)
-          (if n mod 2 = 0 then x else x+b)
-    in
-    let m = loop (abs n) one zero in
-    if n<0 then -m else m
-end : Ring with type t = R.t)
-
-module FieldOfPreField (F:PreField) = (struct
-  module R : (OfInt with type t := F.t) = RingOfPreRing(F)
-  include F
-  include R
-end : Field)
-
-module IntPreRing = struct
-  type t = int
-  let zero = 0
-  let one = 1
-  let (+) = (+)
-  let (~-) = (~-)
-  let ( * ) = ( * )
-  let to_string = string_of_int
-end
-
-module IntRing : Ring = RingOfPreRing(IntPreRing)
-
-module IntPreField = struct
-  include IntPreRing
-  let (/) = (/)
-end
-
-module IntField : Field = FieldOfPreField(IntPreField)
-
-module FloatPreRing = struct
-  type t = float
-  let zero = 0.
-  let one = 1.
-  let (+) = (+.)
-  let (~-) = (~-.)
-  let ( * ) = ( *. )
-  let to_string = string_of_float
-end
-
-module FloatRing : Ring = RingOfPreRing(FloatPreRing)
-
-module FloatPreField = struct
-  include FloatPreRing
-  let (/) = (/.)
-end
-
-module FloatField : Field = FieldOfPreField(FloatPreField)
-
-module Fraction (F:Field) = struct
-  type t = F.t * F.t
-  let zero = (F.zero, F.one)
-  let one = (F.one, F.one)
-  let (+) (a,b) (c,d) = F.(a*d + c*b, b*d)
-  let (~-) (a,b) = F.(-a,b)
-  let ( * ) (a,b) (c,d) = F.(a*c, b*d)
-  let (/) (a,b) (c,d) = (a,b) * (d,c)
-  let to_string (a,b) = F.((to_string a) ^ "/" ^ (to_string b))
-end
-
-module IntRational : Field = FieldOfPreField(Fraction(IntField))
-
-module FloatRational : Field = FieldOfPreField(Fraction(FloatField))
+(* we leave this solution unstated as a challenge. *)
