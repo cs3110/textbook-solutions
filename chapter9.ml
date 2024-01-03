@@ -602,10 +602,11 @@ We write F for (rec fact -> fun x -> if x <= 1 then 1 else x * (fact (x-1)))
 
 
 
- <[], match Left 2
-      , Left  x -> x + 1
-      , Right x -> x - 1> ==> 3                              (match: Left)
-   because <[], Left 2> ==> Left 2                           (const)
+ <[], match Left 2 with
+      | Left  x -> x + 1
+      | Right x -> x - 1> ==> 3                              (match: Left)
+   because <[], Left 2> ==> Left 2                           (Left)
+     because <[], 2> ==> 2                                   (const)
    and <[x->2], x + 1> ==> 3                                 (op: plus)
      because <[x->2], x> ==> 2                               (var)
      and     <[x->2], 1> ==> 1                               (const)
