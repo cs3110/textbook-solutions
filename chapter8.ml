@@ -727,12 +727,10 @@ let rec within_helper (eps: float) (prev: float) (s: float sequence): float =
 let within (eps: float) (s: float sequence) : float =
   within_helper eps max_float s
 
-(** [e x eps] is  e^x  computed to within a tolerance of [eps]
-  *  Note that there is an interesting boundary case where x=1.0 for the first
-  *     two terms of the sum; you could choose to drop the first term (which is
-  *  always 1.0) from the sequence before using within.
-  *  Requires:
-  *    - [eps] > 0
+(** [e x eps] is $e^x$ computed using a finite prefix of the infinite summation
+  * formula given in the exercise. The computation halts when the absolute
+  * difference between successive approximations is below [eps].
+  * Requires: [eps] > 0.
 *)
 let e (x: float) (eps: float) : float =
   e_terms x |> total |> within eps
