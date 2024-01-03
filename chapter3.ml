@@ -26,6 +26,17 @@ let rec product' = function
   | h :: t -> h * product' t
 
 (********************************************************************
+ * exercise: concat
+ ********************************************************************)
+
+(* returns: the concatenation of all the strings in list, or the
+ *   empty string if list is empty.
+*)
+let rec concat = function
+  | [] -> ""
+  | h :: t -> h ^ concat t
+
+(********************************************************************
  * exercise: patterns
  ********************************************************************)
 
