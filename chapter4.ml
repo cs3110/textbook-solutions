@@ -123,20 +123,17 @@ let exists_lib = List.exists
  * exercise: account balance
  ********************************************************************)
 
-(* returns: the remaining amount in the balance after deducts from
- *   a list with debits
-*)
-let debits = [100.0; 50.00; 80.0]
-let balance = 10000.0
-let remaining_balance_left = List.fold_left (-.) balance debits
+(* returns: the remaining balance after deducting [debits] from the
+ *   account [balance]. *)
+let balance_left balance debits = 
+  List.fold_left ( -. ) balance debits
 
-let remaining_balance_right = List.fold_right (fun x acc -> acc -. x) debits balance
+let balance_right balance debits = 
+  List.fold_right (fun d b -> b -. d) debits balance
 
-let rec remaining_balance_rec balance = function
+let rec balance_rec balance = function
   | [] -> balance
-  | h :: t -> remaining_balance_rec (balance -. h) t
-
-let remaining_balance_rec' = remaining_balance_rec balance debits
+  | h :: t -> balance_rec (balance -. h) t
 
 (********************************************************************
  * exercise: library uncurried
