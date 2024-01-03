@@ -767,49 +767,34 @@ if you'd like to contribute to the community!
  exercise: unify
 *******************************************************************
 
+We omit writing curly braces {...} around substitutions and sets 
+in this solution to keep the notation more lightweight.
 
- - Here, I write a composed substitution like this:
-    {| sa1/sb1, ..., san/sbn |}
-   where sa1/sb2 is the first substitution to perform, and san/sbn is
-   the nth.
- - Substition application looks like this:
-    SC
-   where S is the substitution, and C is the constraints.
-
- Our result, which we'll call U, is:
-  unify ({ X = int, Y = X -> X }) = {| int/X, (int -> int)/Y |}
-   because it's equal to U';{| int/X |},
-    where U' is:
-     unify ({| int/X |}{ Y = X -> X })
-     = unify ({ Y = int -> int })
-     = {| (int -> int)/Y |}
-      because U' equals U'';{| (int -> int)/Y |},
-       where U'' is
-        unify ({| (int -> int)/Y |}{})
-        = {| |} (the empty substitution).
-
+  unify(X = int, Y = X -> X)
+=   { eliminate X }
+  int / X; unify((Y = X -> X) (int / X)}
+=   { apply substitution }
+  int / X; unify(Y = int -> int)
+=   { eliminate Y }
+  int / X; int -> int / Y
 
 *******************************************************************
  exercise: unify more
 *******************************************************************
 
- (See "unify" exercise for definition of `{| ... |}`.)
+We omit showing the "apply substitution" step at each elimination
+below, because in each case the substitution has no effect on the
+remaining constraint set.
 
- Our result, which we'll call U, is:
-  unify ({ X -> Y = Y -> Z, Z = U -> W })
-  = {| Y/X, Z/Y, (U -> W)/Z |}
-   because it's equal to unify ({ X = Y, Y = Z } ∪ { Z = U -> W })
-    which is equal to U';{| Y/X |}, where U' is
-     unify({| Y/X |}{ Y = Z, Z = U -> W })
-     = unify({ Y = Z, Z = U -> W })
-      which is equal to to U'';{| Z/Y |}, where U'' is
-       unify({| Z/Y |}{ Z = U -> W })
-       = unify({ Z = U -> W })
-        which is equal to U''';{| (U -> W)/Z |}, where U''' is
-         unify({| (U -> W)/Z |}{ Z = U -> W})
-         = unify({ U -> W = U -> W })
-          which is equal to unify({ U = U, W = W } ∪ {})
-          = {| |} (last few steps omitted for brevity; trivial cases)
+  unify(X -> Y = Y -> Z, Z = U -> W)
+=   { eliminate -> }
+  unify(X = Y, Y = Z, Z = U -> W)
+=   { eliminate X }
+  Y / X; unify(Y = Z, Z = U -> W) 
+=   { eliminate Y }
+  Y / X; Z / Y; unify(Z = U -> W)
+=   { eliminate Z }
+  Y / X; Z / Y; U -> W / Z
 
 *******************************************************************
  exercise: infer apply
