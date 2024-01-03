@@ -314,6 +314,10 @@ let thd (_,_,x) = x
 let first_after date cal =
   DateMap.(split date cal |> thd |> min_binding |> snd)
 
+(* another solution *)
+let first_after' date cal = 
+  DateMap.find_first (fun k -> (Date.compare k date) > 0) cal |> snd
+
 (********************************************************************
  * exercise: ToString
  ********************************************************************)
