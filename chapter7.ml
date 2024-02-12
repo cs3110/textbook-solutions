@@ -84,6 +84,11 @@
    let n = norm v in (* Must calculate norm before iteration *)
    Array.iteri (fun i x -> v.(i) <- x /. n) v
 
+ (* since OCaml 5.1 *)
+ let normalize' (v : vector) =
+   let n = norm v in
+   Array.map_inplace (fun x -> x /. n) v
+
 
  (********************************************************************
   * exercise: normalize loop
