@@ -137,11 +137,6 @@ let load_factor h =
  let stats = Hashtbl.stats h in
  stats.num_bindings /.. stats.num_buckets
 
-
-(********************************************************************
-* exercise: hashtbl load factor
-********************************************************************)
-
 let epsilon = 0.1
 
 (* [close_to x y] is [true] if [x] and [y] are within [epsilon] of
