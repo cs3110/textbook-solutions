@@ -19,7 +19,7 @@
  *        | ()| | ()|
  *        +---+ +---+
  *
- * The picture above shows the keyson the first line and the value
+ * The picture above shows the keys on the first line and the value
  * they bind to on the second line.  Here, we've chosen the unit
  * value, but that is unimportant to the exercise.
  *)
