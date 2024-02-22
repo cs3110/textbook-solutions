@@ -54,6 +54,16 @@ let product_left lst = List.fold_left ( *. ) 1.0 lst
 *)
 let product_right lst = List.fold_right ( *. ) lst 1.0
 
+
+(********************************************************************
+ * exercise: terse product
+ ********************************************************************)
+
+let terse_product_left = List.fold_left ( *. ) 1.0
+
+let terse_product_right = ListLabels.fold_right ~f:( *. ) ~init:1.0
+
+
 (********************************************************************
  * exercise: sum_cube_odd
  ********************************************************************)
@@ -144,15 +154,6 @@ let uncurried_append (lst,e) = List.append lst e
 let uncurried_compare (c1,c2) = Char.compare c1 c2
 
 let uncurried_max (n1,n2) = Stdlib.max n1 n2
-
-
-(********************************************************************
- * exercise: terse product
- ********************************************************************)
-
-let terse_product_left = List.fold_left ( *. ) 1.0
-
-let terse_product_right = ListLabels.fold_right ~f:( *. ) ~init:1.0
 
 
 (********************************************************************
