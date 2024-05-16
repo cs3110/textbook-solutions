@@ -121,7 +121,7 @@ let rec take n lst =
 let rec drop n lst =
   if n = 0 then lst else match lst with
     | [] -> []
-    | x :: xs -> drop (n - 1) xs
+    | _ :: xs -> drop (n - 1) xs
 
 (********************************************************************
  * exercise: take drop tail
