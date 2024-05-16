@@ -496,15 +496,15 @@ end
 
 module FloatField : Field = FieldOfPreField(FloatPreField)
 
-module Fraction (F:Field) = struct
-  type t = F.t * F.t
-  let zero = (F.zero, F.one)
-  let one = (F.one, F.one)
-  let (+) (a,b) (c,d) = F.(a*d + c*b, b*d)
-  let (~-) (a,b) = F.(-a,b)
-  let ( * ) (a,b) (c,d) = F.(a*c, b*d)
+module Fraction (R:Ring) = struct
+  type t = R.t * R.t
+  let zero = (R.zero, R.one)
+  let one = (R.one, R.one)
+  let (+) (a,b) (c,d) = R.(a*d + c*b, b*d)
+  let (~-) (a,b) = R.(-a,b)
+  let ( * ) (a,b) (c,d) = R.(a*c, b*d)
   let (/) (a,b) (c,d) = (a,b) * (d,c)
-  let to_string (a,b) = F.((to_string a) ^ "/" ^ (to_string b))
+  let to_string (a,b) = R.((to_string a) ^ "/" ^ (to_string b))
 end
 
 module IntRational : Field = FieldOfPreField(Fraction(IntField))
