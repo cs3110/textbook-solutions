@@ -93,15 +93,6 @@ let () = assert ((try Hashtbl.find tab 0 with Not_found -> "") = "")
 
 
 (********************************************************************
-* exercise: hashtbl bindings
-********************************************************************)
-
-(* [bindings h] is a list of key-value pairs that are in [h] *)
-let bindings h =
- Hashtbl.fold (fun k v acc -> (k, v) :: acc) h []
-
-
-(********************************************************************
 * exercise: hashtbl stats
 ********************************************************************)
 
@@ -120,6 +111,16 @@ let single_binding h =
  (Hashtbl.stats h).bucket_histogram.(1)
 
 let () = assert (single_binding tab = 3)
+
+
+(********************************************************************
+* exercise: hashtbl bindings
+********************************************************************)
+
+(* [bindings h] is a list of key-value pairs that are in [h] *)
+let bindings h =
+ Hashtbl.fold (fun k v acc -> (k, v) :: acc) h []
+
 
 (********************************************************************
 * exercise: hashtbl load factor

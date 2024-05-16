@@ -318,6 +318,20 @@ let first_after date cal =
 let first_after' date cal = 
   DateMap.find_first (fun k -> (Date.compare k date) > 0) cal |> snd
 
+
+(********************************************************************
+ * exercise: sets
+ ********************************************************************)
+
+module CisSet = Set.Make(struct
+    type t = string
+    let compare s1 s2 =
+      String.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
+  end)
+
+let _ = CisSet.(equal (of_list ["grr"; "argh"]) (of_list ["GRR"; "aRgh"]))
+
+
 (********************************************************************
  * exercise: ToString
  ********************************************************************)
@@ -372,18 +386,6 @@ let _ = PrintString.print "Harambe"
  * admittedly a tiny piece of code to factor out!  But if printing
  * required a lot more code to implement, we'd have felt good about this.
 *)
-
-(********************************************************************
- * exercise: sets
- ********************************************************************)
-
-module CisSet = Set.Make(struct
-    type t = string
-    let compare s1 s2 =
-      String.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
-  end)
-
-let _ = CisSet.(equal (of_list ["grr"; "argh"]) (of_list ["GRR"; "aRgh"]))
 
 
 (********************************************************************

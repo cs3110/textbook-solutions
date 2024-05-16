@@ -91,18 +91,6 @@
 
 
  (********************************************************************
-  * exercise: normalize loop
-  ********************************************************************)
-
- (* effects: [normalize_loop v] modifies [v] to be its normalized form. *)
- let normalize_loop v =
-   let n = norm v in
-   for i = 0 to Array.length v - 1 do
-     v.(i) <- v.(i) /. n
-   done
-
-
- (********************************************************************
   * exercise: norm loop
   ********************************************************************)
 
@@ -113,6 +101,18 @@
      n := !n +. (v.(i) ** 2.)
    done;
    sqrt !n
+
+
+ (********************************************************************
+  * exercise: normalize loop
+  ********************************************************************)
+
+ (* effects: [normalize_loop v] modifies [v] to be its normalized form. *)
+ let normalize_loop v =
+   let n = norm v in
+   for i = 0 to Array.length v - 1 do
+     v.(i) <- v.(i) /. n
+   done
 
 
  (********************************************************************
