@@ -294,73 +294,78 @@ let () = assert ((BadHashtbl.stats bad).bucket_histogram.(100) = 1)
 ********************************************************************)
 
 module type Set = sig
- (* [elt] is the type of the set elements. *)
- type elt
+  (* [elt] is the type of the set elements. *)
+  type elt
+ 
+  (* [t] is the type of sets whose elements have type [elt]. *)
+  type t
+ 
+  (* [empty] is the empty set *)
+  val empty    : t
+ 
+  (* [insert x s] is the set ${x} \union s$. *)
+  val insert   : elt -> t -> t
+ 
+  (* [mem x s] is whether $x \in s$. *)
+  val mem      : elt -> t -> bool
+ 
+  (* [of_list lst] is the smallest set containing all the elements of [lst]. *)
+  val of_list  : elt list -> t
+ 
+  (* [elements s] is the list containing the same elements as [s]. *)
+  val elements : t -> elt list
+ end
+ 
+ module type Ordered = sig
+  type t
+  val compare : t -> t -> int
+ end
+ 
+ module BstSet (Ord : Ordered) : Set with type elt = Ord.t = struct
+  (* AF:  [Leaf] represents the empty set.  [Node (l, v, r)] represents
+   *   the set $AF(l) \union {v} \union AF(r)$. *)
+  (* RI:  for every [Node (l, v, r)], all the values in [l] are strictly
+   *   less than [v], and all the values in [r] are strictly greater
+   *   than [v]. *)
+ 
+  type elt = Ord.t
+ 
+  type t = Leaf | Node of t * elt * t
+ 
+  let empty = Leaf
+ 
+  let rec mem x = function
+    | Leaf -> false
+    | Node (l, v, r) ->
+      begin
+        match compare x v with
+        | ord when ord < 0 -> mem x l
+        | ord when ord > 0 -> mem x r
+        | _                -> true
+      end
+ 
+  let rec insert x = function
+    | Leaf -> Node (Leaf, x, Leaf)
+    | Node (l, v, r) ->
+      begin
+        match compare x v with
+        | ord when ord < 0 -> Node(insert x l, v, r         )
+        | ord when ord > 0 -> Node(l,          v, insert x r)
+        | _                -> Node(l,          x, r         )
+      end
+ 
+  let of_list lst =
+    List.fold_left (fun s x -> insert x s) empty lst
+ 
+  let rec elements = function
+    | Leaf -> []
+    | Node (l, v, r) -> (elements l) @ [v] @ (elements r)
+ end
 
- (* [t] is the type of sets whose elements have type [elt]. *)
- type t
+(* An example usage of the functor: *)
 
- (* [empty] is the empty set *)
- val empty    : t
-
- (* [insert x s] is the set ${x} \union s$. *)
- val insert   : elt -> t -> t
-
- (* [mem x s] is whether $x \in s$. *)
- val mem      : elt -> t -> bool
-
- (* [of_list lst] is the smallest set containing all the elements of [lst]. *)
- val of_list  : elt list -> t
-
- (* [elements s] is the list containing the same elements as [s]. *)
- val elements : t -> elt list
-end
-
-module type Ordered = sig
- type t
- val compare : t -> t -> int
-end
-
-module BstSet (Ord : Ordered) : Set = struct
- (* AF:  [Leaf] represents the empty set.  [Node (l, v, r)] represents
-  *   the set $AF(l) \union {v} \union AF(r)$. *)
- (* RI:  for every [Node (l, v, r)], all the values in [l] are strictly
-  *   less than [v], and all the values in [r] are strictly greater
-  *   than [v]. *)
-
- type elt = Ord.t
-
- type t = Leaf | Node of t * elt * t
-
- let empty = Leaf
-
- let rec mem x = function
-   | Leaf -> false
-   | Node (l, v, r) ->
-     begin
-       match compare x v with
-       | ord when ord < 0 -> mem x l
-       | ord when ord > 0 -> mem x r
-       | _                -> true
-     end
-
- let rec insert x = function
-   | Leaf -> Node (Leaf, x, Leaf)
-   | Node (l, v, r) ->
-     begin
-       match compare x v with
-       | ord when ord < 0 -> Node(insert x l, v, r         )
-       | ord when ord > 0 -> Node(l,          v, insert x r)
-       | _                -> Node(l,          x, r         )
-     end
-
- let of_list lst =
-   List.fold_left (fun s x -> insert x s) empty lst
-
- let rec elements = function
-   | Leaf -> []
-   | Node (l, v, r) -> (elements l) @ [v] @ (elements r)
-end
+module IntSet = BstSet (Int)
+let example_set = IntSet.(empty |> insert 1)
 
 
 (********************************************************************
