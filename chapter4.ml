@@ -182,12 +182,11 @@ let add_one lst =
 (* returns: [s] where [s] is the concatenation of all elements in
  *   [strs] seperated by [sep].
 *)
-let join_with strs sep =
-  match strs with
-  | [] -> ""
-  | x :: xs ->
-    List.fold_left (fun combined s -> combined ^ sep ^ s) x xs
-
+let join_with strs sep = 
+  List.fold_left
+    (fun combined s -> if combined = "" then combined ^ s else combined ^ sep ^ s)
+    ""
+    strs
 
 (********************************************************************
  * exercise: association list keys
