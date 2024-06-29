@@ -263,7 +263,7 @@ let add_matrices =
  * exercise: matrix multiply
  ********************************************************************)
 
-let rec transpose ls =
+let transpose ls =
   let rec transpose' acc = function
     | [] | [] :: _ -> List.rev acc
     | ls -> transpose' (List.map List.hd ls :: acc) (List.map List.tl ls)
