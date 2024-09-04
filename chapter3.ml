@@ -193,6 +193,15 @@ let rec is_mon_inc_then_dec = function
 let is_unimodal lst = 
   is_mon_inc_then_dec lst
 
+(** returns: whether the input list has any valleys )
+    i.e decreasing and then increasing *)
+let any_valley = function
+  | [] | [_] | [_; _] -> false
+  | h1 :: (h2 :: h3 :: t3 as t) -> h1 > h2 && h2 < h3 || any_valley t
+
+(** returns: whether the list has no valleys i.e unimodal  *)
+let is_unimodal' lst = not (any_valley lst)
+
 (********************************************************************
  * exercise: powerset
  ********************************************************************)
