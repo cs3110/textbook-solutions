@@ -10,13 +10,13 @@ Base case: m = 0
 Show: exp x (0 + n) = exp x 0 * exp x n
 
   exp x (0 + n)
-=   { evaluation }
+=   { algebra }
   exp x n
 
   exp x 0 * exp x n
 =   { evaluation }
   1 * exp x n
-=   { evaluation }
+=   { algebra }
   exp x n
 
 Inductive case: m = k + 1
