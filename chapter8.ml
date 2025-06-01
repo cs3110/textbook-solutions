@@ -898,8 +898,8 @@ let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
   | Rejected x -> {state = Rejected x; handlers = []}
   | Pending ->
       let output_promise, output_resolver = make () in
-        enqueue (handler_of_callback' callback output_resolver) input_promise;
-        output_promise
+      enqueue (handler_of_callback' callback output_resolver) input_promise;
+      output_promise
 
 (********************************************************************
  * exercise: promise and resolve
