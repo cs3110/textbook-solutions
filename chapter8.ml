@@ -863,6 +863,45 @@ module LazyListImpl : LazyList = struct
 end
 
 (********************************************************************
+ * exercise: map via bind
+ ********************************************************************)
+
+let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+  input_promise >>= (fun x -> return (callback x))
+
+(* or, using a non-infix version of [bind]: *)
+let map' (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+  bind input_promise (fun x -> return (callback x))
+
+(********************************************************************
+ * exercise: map anew
+ ********************************************************************)
+
+(* This is a lightweight version of [handler_of_callback] *)
+let handler_of_callback'
+    (callback : 'a -> 'b)
+    (resolver : 'b resolver) : 'a handler
+  = function
+    | Pending -> failwith "handler RI violated"
+    | Rejected exc -> reject resolver exc
+    | Fulfilled x ->
+      try
+        let ans = callback x in
+        fulfill resolver ans
+        (* We have fewer cases to consider since the callback return a value.
+        We still need a try-with block: the callback may raise an exception. *)
+      with exc -> reject resolver exc
+
+let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+  match input_promise.state with
+  | Resolved x -> return (callback x)
+  | Rejected x -> {state = Rejected x; handlers = []}
+  | Pending ->
+      let output_promise, output_resolver = make () in
+        enqueue (handler_of_callback' callback output_resolver) input_promise;
+        output_promise
+
+(********************************************************************
  * exercise: promise and resolve
  ********************************************************************)
 
