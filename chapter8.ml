@@ -888,7 +888,7 @@ let handler_of_callback'
       try
         let ans = callback x in
         fulfill resolver ans
-        (* We have fewer cases to consider since the callback return a value.
+        (* We have fewer cases to consider since the callback returns a value.
         We still need a try-with block: the callback may raise an exception. *)
       with exc -> reject resolver exc
 
