@@ -1,144 +1,433 @@
 (********************************************************************
- * exercise: mutable fields
+ * exercise: promise and resolve
  ********************************************************************)
 
- type student = {name: string; mutable gpa: float}
+module type Promise = sig
 
- let alice = {name = "Alice"; gpa = 3.7}
+  type 'a state = Pending | Fulfilled of 'a | Rejected of exn
+  type 'a promise
+  type 'a resolver
 
- let () = alice.gpa <- 4.0
+  (** [make ()] is a new promise and resolver. The promise is pending. *)
+  val make : unit -> 'a promise * 'a resolver
 
+  (** [return x] is a new promise that is already fulfilled with value [x]. *)
+  val return : 'a -> 'a promise
 
- (********************************************************************
-  * exercise: refs
-  ********************************************************************)
+  (** [state p] is the state of the promise *)
+  val state : 'a promise -> 'a state
 
- (* Exercise: refs *)
- let (_ : bool ref) = ref true
- let (_ : int list ref) = ref [5;3]
- let (_ : int ref list) = [ref 5; ref 3]
+  (** [resolve r x] fulfills the promise [p] associated with [r]
+      with value [x], meaning that [state p] will become
+      [Fulfilled x].
+      Requires:  [p] is pending. *)
+  val resolve : 'a resolver -> 'a -> unit
 
+  (** [reject r x] rejects the promise [p] associated with [r]
+      with exception [x], meaning that [state p] will become
+      [Rejected x].
+      Requires:  [p] is pending. *)
+  val reject : 'a resolver -> exn -> unit
 
- (********************************************************************
-  * exercise: inc fun
-  ********************************************************************)
+  (** [p >>= c] registers callback [c] with promise [p].
+      When the promise is fulfilled, the callback will be run
+      on the promises's contents.  If the promise is never
+      fulfilled, the callback will never run. *)
+  val ( >>= ) : 'a promise -> ('a -> 'b promise) -> 'b promise
+end
 
- let cs3110 =
-   let inc = ref (fun x -> x + 1) in
-   !inc 3109
+module Promise : Promise = struct
+  type 'a state = Pending | Fulfilled of 'a | Rejected of exn
 
+  (* RI: if [state <> Pending] then [callbacks = []]. *)
+  type 'a promise = {
+    mutable state : 'a state;
+    mutable callbacks : ('a -> unit) list
+  }
 
- (********************************************************************
-  * exercise: addition assignment
-  ********************************************************************)
+  type 'a resolver = 'a promise
 
- let (+:=) x y =
-   x := !x + y
+  (** [write_once p s] changes the state of [p] to be [s].  If [p] and [s]
+      are both pending, that has no effect.
+      Raises: [Invalid_arg] if the state of [p] is not pending. *)
+  let write_once p s =
+    if p.state = Pending
+    then p.state <- s
+    else invalid_arg "cannot write twice"
 
+  let make () =
+    let p = {state = Pending; callbacks = []} in
+    p, p
 
- (********************************************************************
-  * exercise: physical equality
-  ********************************************************************)
+  let return x =
+    {state = Fulfilled x; callbacks = []}
 
- let _ =
-   let x = ref 0 in
-   let y = x in
-   let z = ref 0 in
+  let state p = p.state
 
-   assert (x == y);
-   assert (not (x == z));
-   assert (x = y);
-   assert (x = z);
-   x := 1;
-   assert (x = y);
-   assert (not (x = z))
+  let reject r x =
+    write_once r (Rejected x);
+    r.callbacks <- []
 
+  let run_callbacks callbacks x =
+    List.iter (fun f -> f x) callbacks
 
- (********************************************************************
-  * exercise: norm
-  ********************************************************************)
+  let resolve r x =
+    write_once r (Fulfilled x);
+    let callbacks = r.callbacks in
+    r.callbacks <- [];
+    run_callbacks callbacks x
 
- (* AF: the float array [| x1; ...; xn |] represents the
-  *     vector (x1, ..., xn)
-  * RI: the array is non-empty *)
- type vector = float array
+  let ( >>= ) (p : 'a promise) (c : 'a -> 'b promise) : 'b promise =
+    match p.state with
+    | Fulfilled x -> c x
+    | Rejected x -> {state = Rejected x; callbacks = []}
+    | Pending ->
+      let bind_promise, bind_resolver = make () in
+      let f x : unit =
+        let callback_promise = c x in
+        match callback_promise.state with
+        | Fulfilled x -> resolve bind_resolver x
+        | Rejected x -> reject bind_resolver x
+        | Pending -> failwith "impossible"
+      in
+      p.callbacks <- f :: p.callbacks;
+      bind_promise
+end
 
- (** [norm v] is the Euclidean norm of [v]. *)
- let norm v =
-   sqrt (Array.fold_left (fun acc x -> acc +. x ** 2.) 0. v)
+let _ =
+  let open Promise in
+  let p, r = make () in
+  let _ = p >>= (fun i -> Printf.printf "%i\n" i; return ()) in
+  resolve r 42
 
- (* another solution:  same asymptotic complexity but
-    less efficient.  Perhaps more readable. *)
- let norm' v =
-   v
-   |> Array.map (fun x -> x ** 2.)  (* square each element *)
-   |> Array.fold_left (+.) 0.       (* sum all elements *)
-   |> sqrt
+(********************************************************************
+ * exercise: map via bind
+ ********************************************************************)
 
- (********************************************************************
-  * exercise: normalize
-  ********************************************************************)
+module MapViaBind = struct
+  open Promise
 
- (* effects: [normalize v] modifies [v] to be its normalized form. *)
- let normalize v =
-   let n = norm v in (* Must calculate norm before iteration *)
-   Array.iteri (fun i x -> v.(i) <- x /. n) v
+  let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+    input_promise >>= (fun x -> return (callback x))
 
- (* since OCaml 5.1 *)
- let normalize' (v : vector) =
-   let n = norm v in
-   Array.map_inplace (fun x -> x /. n) v
+  (* or, using a non-infix version of [bind]: *)
+  let bind = ( >>= )
+  let map' (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+    bind input_promise (fun x -> return (callback x))
+end
 
+(********************************************************************
+ * exercise: map anew
+ ********************************************************************)
 
- (********************************************************************
-  * exercise: norm loop
-  ********************************************************************)
+(* Note: this code would need to be inserted inside the Promise module's
+  implementation. *)
 
- (** [norm_loop v] is the Euclidean norm of [v]. *)
- let norm_loop v =
-   let n = ref 0.0 in
-   for i = 0 to Array.length v - 1 do
-     n := !n +. (v.(i) ** 2.)
-   done;
-   sqrt !n
+(* This is a lightweight version of [handler_of_callback] *)
+let handler_of_callback'
+    (callback : 'a -> 'b)
+    (resolver : 'b resolver) : 'a handler
+  = function
+    | Pending -> failwith "handler RI violated"
+    | Rejected exc -> reject resolver exc
+    | Fulfilled x ->
+      try
+        let ans = callback x in
+        fulfill resolver ans
+        (* We have fewer cases to consider since the callback returns a value.
+        We still need a try-with block: the callback may raise an exception. *)
+      with exc -> reject resolver exc
 
+let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+  match input_promise.state with
+  | Fulfilled x -> return (callback x)
+  | Rejected x -> {state = Rejected x; handlers = []}
+  | Pending ->
+      let output_promise, output_resolver = make () in
+      enqueue (handler_of_callback' callback output_resolver) input_promise;
+      output_promise
 
- (********************************************************************
-  * exercise: normalize loop
-  ********************************************************************)
+module LwtExercises = struct
 
- (* effects: [normalize_loop v] modifies [v] to be its normalized form. *)
- let normalize_loop v =
-   let n = norm v in
-   for i = 0 to Array.length v - 1 do
-     v.(i) <- v.(i) /. n
-   done
+  open Lwt.Infix  (* for [>>=] *)
 
+  (********************************************************************
+   * exercise: promise and resolve lwt
+   ********************************************************************)
 
- (********************************************************************
-  * exercise: imperative factorial
-  ********************************************************************)
+  (* to run this in utop, first [#require "lwt.unix";;] *)
 
- (** [fact_loop n] is the factorial of [n].
-  * requires: [n >= 0]
- *)
- let fact_loop n =
-   let ans = ref 1 in
-   for i = 1 to n do
-     ans := !ans * i
-   done;
-   !ans
+  let _ =
+    let p, r = Lwt.wait () in
+    let _ = p >>= (fun i -> Lwt_io.printf "%i\n" i) in
+    Lwt.wakeup r 42
 
+  (********************************************************************
+   * exercise: timing challenge 1
+   ********************************************************************)
 
- (********************************************************************
-  * exercise: init matrix
-  ********************************************************************)
+  (** [delay s] is a promise that resolves after about [s] seconds. *)
+  let delay (sec : float) : unit Lwt.t =
+    Lwt_unix.sleep sec
 
- (* [init_matrix n o f] creates and returns an [n] by [o] matrix [m]
-  * with [m.(i).(j) = f i j] for all [i] and [j] in bounds.
-  * requires: [n, o >= 0]
- *)
- let init_matrix n o f =
-   Array.init n (fun i -> Array.init o (fun j -> f i j))
+  (** prints ["done"] after about 3 seconds. *)
+  let delay_then_print () =
+    delay 3. >>= fun () ->
+    Lwt_io.printl "done"
 
- 
+  (********************************************************************
+   * exercise: timing challenge 2
+   ********************************************************************)
+
+  let timing2 () =
+    let _t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+    let _t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+    let _t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+    Lwt_io.printl "all done"
+
+  (* Answer:
+     - "all done" prints immediately.
+     - about a second later, "1" prints.
+     - about 9 more seconds later, "2" prints.
+     - about 10 more seconds later, "3" prints.
+       The total elapsed time is about 20 seconds. *)
+
+  (********************************************************************
+   * exercise: timing challenge 3
+   ********************************************************************)
+
+  let timing3 () =
+    delay 1. >>= fun () ->
+    Lwt_io.printl "1" >>= fun () ->
+    delay 10. >>= fun () ->
+    Lwt_io.printl "2" >>= fun () ->
+    delay 20. >>= fun () ->
+    Lwt_io.printl "3" >>= fun () ->
+    Lwt_io.printl "all done"
+
+  (* Answer:
+     - after about a second, "1" prints.
+     - about 10 more seconds later, "2" prints.
+     - about 20 more seconds later, "3" prints.
+     - then "all done" immediately prints.
+       The total elapsed time is about 31 seconds. *)
+
+  (********************************************************************
+   * exercise: timing challenge 4
+   ********************************************************************)
+
+  let timing4 () =
+    let t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
+    let t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
+    let t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
+    Lwt.join [t1; t2; t3] >>= fun () ->
+    Lwt_io.printl "all done"
+
+  (* Answer:
+     - after about a second, "1" prints.
+     - about 9 more seconds later, "2" prints.
+     - about 10 more seconds later, "3" prints.
+     - then "all done" immediately prints.
+       The total elapsed time is about 20 seconds. *)
+
+  (********************************************************************
+   * exercise: file monitor
+   ********************************************************************)
+
+  open Lwt_io
+  open Lwt_unix
+
+  let log () : input_channel Lwt.t =
+    openfile "log" [O_RDONLY] 0 >>= fun fd ->
+    Lwt.return (of_fd input fd)
+
+  let rec loop (ic : input_channel) =
+    read_line ic >>= fun str ->
+    printlf "%s" str >>= fun () ->
+    loop ic
+
+  let monitor () : unit Lwt.t =
+    log () >>= loop
+
+  let handler : exn -> unit Lwt.t = function
+    | End_of_file -> Lwt.return ()
+    | exc -> Lwt.fail exc
+
+  let main () : unit Lwt.t =
+    Lwt.catch monitor handler
+
+  (* uncomment to actually run the monitor:
+     let _ = Lwt_main.run (main ())
+  *)
+
+end
+
+(********************************************************************
+ * Maybe monad
+ ********************************************************************)
+
+module type Monad = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+end
+
+module Maybe : Monad =
+struct
+  type 'a t = 'a option
+
+  let return x = Some x
+
+  let (>>=) m f =
+    match m with
+    | Some x -> f x
+    | None -> None
+
+end
+
+open Maybe
+
+(********************************************************************
+ * exercise: add opt
+ ********************************************************************)
+
+let add (x : int t) (y : int t) : int t =
+  x >>= fun a ->
+  y >>= fun b ->
+  return (a + b)
+
+(********************************************************************
+ * exercise: fmap and join
+ ********************************************************************)
+
+module type ExtMonad = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+  val join : 'a t t -> 'a t
+end
+
+module Maybe : ExtMonad =
+struct
+  type 'a t = 'a option
+
+  let return x = Some x
+
+  let (>>=) m f =
+    match m with
+    | Some x -> f x
+    | None -> None
+
+  let (>>|) m f =
+    match m with
+    | Some x -> Some (f x)
+    | None -> None
+
+  let join = function
+    | Some m -> m
+    | None -> None
+
+end
+
+(********************************************************************
+ * exercise: fmap and join again
+ ********************************************************************)
+
+module Maybe : ExtMonad =
+struct
+  type 'a t = 'a option
+
+  let return x = Some x
+
+  let (>>=) m f =
+    match m with
+    | Some x -> f x
+    | None -> None
+
+  let (>>|) x f =
+    x >>= fun a ->
+    return (f a)
+
+  let join x =
+    x >>= fun y ->
+    y
+
+end
+
+(********************************************************************
+ * exercise: bind from fmap+join
+ ********************************************************************)
+
+module type FmapJoinMonad = sig
+  type 'a t
+  val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+  val join : 'a t t -> 'a t
+  val return : 'a -> 'a t
+end
+
+module type BindMonad = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+end
+
+module MakeMonad (M : FmapJoinMonad) : BindMonad = struct
+  include M
+  let (>>=) m f =
+    m >>| f |> join
+end
+
+(********************************************************************
+ * exercise: list monad
+ ********************************************************************)
+
+module ListMonad : ExtMonad = struct
+  type 'a t = 'a list
+
+  let return x =
+    [x]
+
+  let join =
+    List.flatten
+
+  let (>>|) m f =
+    List.map f m
+
+  let (>>=) m f =
+    m |> List.map f |> join
+    (* or, m >>| f |> join *)
+end
+
+(********************************************************************
+ * exercise: trivial monad laws
+ ********************************************************************)
+
+module Trivial : Monad = struct
+  type 'a t = Wrap of 'a
+  let return x = Wrap x
+  let (>>=) (Wrap x) f = f x
+end
+
+(*
+Law 1:  [return x >>= f] behaves the same as [f x].
+
+Proof.  By the definition of [return], [return x >>= f] evaluates
+  to [Wrap x >>= f].  By the definition of [>>=], that evaluates
+  to [f x].
+
+Law 2:  [m >>= return] behaves the same as [m].
+
+Proof.  Since [m : 'a t] it must be [Wrap x] for some [x].  By the
+  definition of [>>=], [m >>= return] thus evaluates to [return x].
+  By the definition of [return], that evaluates to [Wrap x],
+  which is just [m].
+
+Law 3:  [m >>= f >>= g] behaves the same as [m >>= (fun x -> f x >>= g)].
+
+Proof.  Since [m : 'a t] it must be [Wrap z] for some [z].  By the
+  definition of [>>=], [m >>= f >>= g] thus evaluates to [f z >>= g].
+  Likewise, [m >>= (fun x -> f x >>= g)] thus evaluates to
+  [(fun x -> f x >>= g) z], which evaluates to [f z >>= g].
+
+*)
