@@ -4,22 +4,22 @@
 
 module type Promise = sig
 
-  type 'a state = Pending | Resolved of 'a | Rejected of exn
+  type 'a state = Pending | Fulfilled of 'a | Rejected of exn
   type 'a promise
   type 'a resolver
 
   (** [make ()] is a new promise and resolver. The promise is pending. *)
   val make : unit -> 'a promise * 'a resolver
 
-  (** [return x] is a new promise that is already resolved with value [x]. *)
+  (** [return x] is a new promise that is already fulfilled with value [x]. *)
   val return : 'a -> 'a promise
 
   (** [state p] is the state of the promise *)
   val state : 'a promise -> 'a state
 
-  (** [resolve r x] resolves the promise [p] associated with [r]
+  (** [resolve r x] fulfills the promise [p] associated with [r]
       with value [x], meaning that [state p] will become
-      [Resolved x].
+      [Fulfilled x].
       Requires:  [p] is pending. *)
   val resolve : 'a resolver -> 'a -> unit
 
@@ -30,14 +30,14 @@ module type Promise = sig
   val reject : 'a resolver -> exn -> unit
 
   (** [p >>= c] registers callback [c] with promise [p].
-      When the promise is resolved, the callback will be run
+      When the promise is fulfilled, the callback will be run
       on the promises's contents.  If the promise is never
-      resolved, the callback will never run. *)
-  val (>>=) : 'a promise -> ('a -> 'b promise) -> 'b promise
+      fulfilled, the callback will never run. *)
+  val ( >>= ) : 'a promise -> ('a -> 'b promise) -> 'b promise
 end
 
 module Promise : Promise = struct
-  type 'a state = Pending | Resolved of 'a | Rejected of exn
+  type 'a state = Pending | Fulfilled of 'a | Rejected of exn
 
   (* RI: if [state <> Pending] then [callbacks = []]. *)
   type 'a promise = {
@@ -60,7 +60,7 @@ module Promise : Promise = struct
     p, p
 
   let return x =
-    {state = Resolved x; callbacks = []}
+    {state = Fulfilled x; callbacks = []}
 
   let state p = p.state
 
@@ -72,21 +72,21 @@ module Promise : Promise = struct
     List.iter (fun f -> f x) callbacks
 
   let resolve r x =
-    write_once r (Resolved x);
+    write_once r (Fulfilled x);
     let callbacks = r.callbacks in
     r.callbacks <- [];
     run_callbacks callbacks x
 
-  let (>>=) (p : 'a promise) (c : 'a -> 'b promise) : 'b promise =
+  let ( >>= ) (p : 'a promise) (c : 'a -> 'b promise) : 'b promise =
     match p.state with
-    | Resolved x -> c x
+    | Fulfilled x -> c x
     | Rejected x -> {state = Rejected x; callbacks = []}
     | Pending ->
       let bind_promise, bind_resolver = make () in
       let f x : unit =
         let callback_promise = c x in
         match callback_promise.state with
-        | Resolved x -> resolve bind_resolver x
+        | Fulfilled x -> resolve bind_resolver x
         | Rejected x -> reject bind_resolver x
         | Pending -> failwith "impossible"
       in
@@ -99,6 +99,53 @@ let _ =
   let p, r = make () in
   let _ = p >>= (fun i -> Printf.printf "%i\n" i; return ()) in
   resolve r 42
+
+(********************************************************************
+ * exercise: map via bind
+ ********************************************************************)
+
+module MapViaBind = struct
+  open Promise
+
+  let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+    input_promise >>= (fun x -> return (callback x))
+
+  (* or, using a non-infix version of [bind]: *)
+  let bind = ( >>= )
+  let map' (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+    bind input_promise (fun x -> return (callback x))
+end
+
+(********************************************************************
+ * exercise: map anew
+ ********************************************************************)
+
+(* Note: this code would need to be inserted inside the Promise module's
+  implementation. *)
+
+(* This is a lightweight version of [handler_of_callback] *)
+let handler_of_callback'
+    (callback : 'a -> 'b)
+    (resolver : 'b resolver) : 'a handler
+  = function
+    | Pending -> failwith "handler RI violated"
+    | Rejected exc -> reject resolver exc
+    | Fulfilled x ->
+      try
+        let ans = callback x in
+        fulfill resolver ans
+        (* We have fewer cases to consider since the callback returns a value.
+        We still need a try-with block: the callback may raise an exception. *)
+      with exc -> reject resolver exc
+
+let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
+  match input_promise.state with
+  | Fulfilled x -> return (callback x)
+  | Rejected x -> {state = Rejected x; handlers = []}
+  | Pending ->
+      let output_promise, output_resolver = make () in
+      enqueue (handler_of_callback' callback output_resolver) input_promise;
+      output_promise
 
 module LwtExercises = struct
 
