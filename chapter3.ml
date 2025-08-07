@@ -433,32 +433,23 @@ let rec same_shape t1 t2 =
   | Node (_,l1,r1), Node (_,l2,r2) -> (same_shape l1 l2) && (same_shape r1 r2)
   | _ -> false
 
-
 (********************************************************************
  * exercise: list max exn
  ********************************************************************)
 
-(** [list_max_safe x xs] is [x] if [xs] is empty, and otherwise
-    is the maximum element of [x::xs]. *)
-let rec list_max_safe x = function
-  | [] -> x
-  | h::t -> list_max_safe (Stdlib.max x h) t
-
 (** [list_max lst] is the maximum element of [lst] as determined by
-    [Stdlib.max].
-    Raises:  [Failure "empty"] if [lst] is empty. *)
-let list_max = function
-  | [] -> failwith "list_max"
-  | h::t -> list_max_safe h t
+    [Stdlib.max]. Raises: [Failure "empty"] if [lst] is empty. *)
+let rec list_max = function
+  | [] -> failwith "empty"
+  | [ x ] -> x
+  | h :: t -> max h (list_max t)
 
 (********************************************************************
  * exercise: list max exn string
  ********************************************************************)
 
-(* returns: [list_max_string lst] is the string representing the maximum
- *   integer in [lst].
- * raises: [Failure "list_max_string"] if [lst] is empty.
-*)
+(** [list_max_string lst] is the string representing the maximum
+    integer in [lst], or "empty" if the list is empty.*)
 let list_max_string lst =
   try string_of_int (list_max lst) with
   | Failure _ -> "empty"
