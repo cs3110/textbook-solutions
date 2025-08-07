@@ -11,7 +11,7 @@ let lst3 = [1] @ [2; 3; 4] @ [5]
  ********************************************************************)
 
 (* returns: the product of all the elements of [lst], or [1] if [lst]
- *   is empty. 
+ *   is empty.
 *)
 let rec product lst =
   match lst with
@@ -40,20 +40,20 @@ let rec concat = function
  * exercise: patterns
  ********************************************************************)
 
-(* returns:  whether the first element of the input is ["bigred"] 
+(* returns:  whether the first element of the input is ["bigred"]
 *)
 let first_is_bigred = function
   | [] -> false
   | h :: _ -> h = "bigred"
 
-(* returns:  whether the input has exactly two or four elements 
+(* returns:  whether the input has exactly two or four elements
 *)
 let two_or_four_elements = function
   | _ :: _ :: [] -> true
   | _ :: _ :: _ :: _ :: [] -> true
   | _ -> false
 
-(* returns: whether the first two elements of the input are equal 
+(* returns: whether the first two elements of the input are equal
 *)
 let eq_first_two = function
   | a :: b :: _ -> a = b
@@ -63,23 +63,23 @@ let eq_first_two = function
  * exercise: library
  ********************************************************************)
 
-(* returns:  the fifth element of the input list, or zero if the 
- *   list is empty 
+(* returns:  the fifth element of the input list, or zero if the
+ *   list is empty
 *)
 let fifth_element lst =
   if (List.length lst) >= 5 then List.nth lst 4 else 0
 
-(* returns: the input list, sorted in descending order 
+(* returns: the input list, sorted in descending order
 *)
-let sort_list_descending lst = 
+let sort_list_descending lst =
   List.rev (List.sort Stdlib.compare lst)
 
-(* A more idiomatic way to write the above function is 
- *   with the pipeline operator.  This makes use of 
- *   partial application with List.sort. 
+(* A more idiomatic way to write the above function is
+ *   with the pipeline operator.  This makes use of
+ *   partial application with List.sort.
 *)
-let sort_list_descending' lst = 
-  lst |> List.sort Stdlib.compare |> List.rev 
+let sort_list_descending' lst =
+  lst |> List.sort Stdlib.compare |> List.rev
 
 (********************************************************************
  * exercise: library puzzle
@@ -88,17 +88,17 @@ let sort_list_descending' lst =
 (* returns: the last element of [lst]
  * requires: [lst] is nonempty
 *)
-let last_element lst = 
+let last_element lst =
   List.nth lst (List.length lst - 1)
 
-(* another solution... 
+(* another solution...
 *)
-let last_element' lst = 
+let last_element' lst =
   lst |> List.rev |> List.hd
 
 (* returns: whether [lst] contains any zeros
 *)
-let any_zeros lst = 
+let any_zeros lst =
   List.exists (fun x -> x = 0) lst
 
 (********************************************************************
@@ -106,7 +106,7 @@ let any_zeros lst =
  ********************************************************************)
 
 (* returns:  [take n lst] is the first [n] elements of [lst], or
- *   just [lst] if [lst] has fewer than [n] elements. 
+ *   just [lst] if [lst] has fewer than [n] elements.
  * requires: [n >= 0]
 *)
 let rec take n lst =
@@ -128,16 +128,16 @@ let rec drop n lst =
  ********************************************************************)
 
 (* returns: [take_rev n xs acc] is [lst1 @ acc], where [lst] is
- *   the first [n] elements of [xs] (or just [xs] if [xs] has 
- *   fewer than [n] elements) in reverse order. 
+ *   the first [n] elements of [xs] (or just [xs] if [xs] has
+ *   fewer than [n] elements) in reverse order.
  * requires: [n >= 0] *)
-let rec take_rev n xs acc = 
+let rec take_rev n xs acc =
   if n = 0 then acc else match xs with
     | [] -> acc
     | x :: xs' -> take_rev (n - 1) xs' (x :: acc)
 
 (* returns:  [take n lst] is the first [n] elements of [lst], or
- *   just [lst] if [lst] has fewer than [n] elements. 
+ *   just [lst] if [lst] has fewer than [n] elements.
  * requires: [n >= 0]
 *)
 let take_tr n lst =
@@ -164,7 +164,7 @@ let rec from i j l =
 
 (* returns:  [i -- j] is the list containing the integers from
  *   [i] to [j], inclusive.
-*) 
+*)
 let (--) i j =
   from i j []
 
@@ -180,17 +180,17 @@ let longlist = 0 -- 1_000_000
 (** returns: whether the input list is monotonically decreasing *)
 let rec is_mon_dec = function
   | [] | [_] -> true
-  | h1 :: (h2 :: t2 as t) -> 
+  | h1 :: (h2 :: t2 as t) ->
     h1 >= h2 && is_mon_dec t
 
 (** returns: whether the input list is monotonically increasing
     then monotonically decreasing *)
 let rec is_mon_inc_then_dec = function
   | [] | [_] -> true
-  | h1 :: (h2 :: t2 as t) as lst -> 
+  | h1 :: (h2 :: t2 as t) as lst ->
     if h1 <= h2 then is_mon_inc_then_dec t else is_mon_dec lst
 
-let is_unimodal lst = 
+let is_unimodal lst =
   is_mon_inc_then_dec lst
 
 (********************************************************************
@@ -398,7 +398,7 @@ let quadrant (x,y) =
  * exercise: quadrant when
  ********************************************************************)
 
-(** [quadrant_when (x,y)] is [Some q] if [(x, y)] lies in quadrant [q], 
+(** [quadrant_when (x,y)] is [Some q] if [(x, y)] lies in quadrant [q],
     or [None] if it lies on an axis. *)
 let quadrant_when = function
   | x,y when x > 0 && y > 0 -> Some I
@@ -414,7 +414,7 @@ let quadrant_when = function
 
 type 'a tree = Leaf | Node of 'a * 'a tree * 'a tree
 
-(** [depth t] is the number of nodes in any longest path from the root to a 
+(** [depth t] is the number of nodes in any longest path from the root to a
     leaf in tree [t]. *)
 let rec depth = function
   | Leaf -> 0
