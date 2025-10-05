@@ -199,6 +199,19 @@ let is_unimodal lst =
 
 (* returns: [powerset s] is the list representing the set of all subsets of s
  * requires: [s] is a set-like list (no duplicate elements) *)
+let powerset s =
+  (* [helper prefix s] returns the powerset of [s] with [prefix]
+      added to each subset. *)
+  let rec helper prefix = function
+    | [] -> [ prefix ]
+    | x :: xs ->
+        let without_x = helper prefix xs in
+        let with_x = helper (x :: prefix) xs in
+        without_x @ with_x
+  in
+  helper [] s
+
+(* another solution, using [List.map] which is covered in chapter 4. *)
 let rec powerset = function
   | [] -> [ [] ]
   | x :: s -> let p = powerset s in
