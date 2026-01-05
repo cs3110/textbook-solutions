@@ -33,7 +33,7 @@ module type Promise = sig
       When the promise is fulfilled, the callback will be run
       on the promises's contents.  If the promise is never
       fulfilled, the callback will never run. *)
-  val ( >>= ) : 'a promise -> ('a -> 'b promise) -> 'b promise
+  val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
 end
 
 module Promise : Promise = struct
@@ -77,7 +77,7 @@ module Promise : Promise = struct
     r.callbacks <- [];
     run_callbacks callbacks x
 
-  let ( >>= ) (p : 'a promise) (c : 'a -> 'b promise) : 'b promise =
+  let bind (p : 'a promise) (c : 'a -> 'b promise) : 'b promise =
     match p.state with
     | Fulfilled x -> c x
     | Rejected x -> {state = Rejected x; callbacks = []}
@@ -97,7 +97,7 @@ end
 let _ =
   let open Promise in
   let p, r = make () in
-  let _ = p >>= (fun i -> Printf.printf "%i\n" i; return ()) in
+  let _ = bind p (fun i -> Printf.printf "%i\n" i; return ()) in
   resolve r 42
 
 (********************************************************************
@@ -108,11 +108,6 @@ module MapViaBind = struct
   open Promise
 
   let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
-    input_promise >>= (fun x -> return (callback x))
-
-  (* or, using a non-infix version of [bind]: *)
-  let bind = ( >>= )
-  let map' (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
     bind input_promise (fun x -> return (callback x))
 end
 
@@ -149,8 +144,6 @@ let map (callback : 'a -> 'b) (input_promise : 'a promise) : 'b promise =
 
 module LwtExercises = struct
 
-  open Lwt.Infix  (* for [>>=] *)
-
   (********************************************************************
    * exercise: promise and resolve lwt
    ********************************************************************)
@@ -159,7 +152,7 @@ module LwtExercises = struct
 
   let _ =
     let p, r = Lwt.wait () in
-    let _ = p >>= (fun i -> Lwt_io.printf "%i\n" i) in
+    let _ = bind p (fun i -> Lwt_io.printf "%i\n" i) in
     Lwt.wakeup r 42
 
   (********************************************************************
@@ -172,7 +165,7 @@ module LwtExercises = struct
 
   (** prints ["done"] after about 3 seconds. *)
   let delay_then_print () =
-    delay 3. >>= fun () ->
+    let%lwt () = delay 3. in
     Lwt_io.printl "done"
 
   (********************************************************************
@@ -180,29 +173,12 @@ module LwtExercises = struct
    ********************************************************************)
 
   let timing2 () =
-    let _t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
-    let _t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
-    let _t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
-    Lwt_io.printl "all done"
-
-  (* Answer:
-     - "all done" prints immediately.
-     - about a second later, "1" prints.
-     - about 9 more seconds later, "2" prints.
-     - about 10 more seconds later, "3" prints.
-       The total elapsed time is about 20 seconds. *)
-
-  (********************************************************************
-   * exercise: timing challenge 3
-   ********************************************************************)
-
-  let timing3 () =
-    delay 1. >>= fun () ->
-    Lwt_io.printl "1" >>= fun () ->
-    delay 10. >>= fun () ->
-    Lwt_io.printl "2" >>= fun () ->
-    delay 20. >>= fun () ->
-    Lwt_io.printl "3" >>= fun () ->
+    let%lwt () = delay 1. in
+    let%lwt () = Lwt_io.printl "1" in
+    let%lwt () = delay 10. in
+    let%lwt () = Lwt_io.printl "2" in
+    let%lwt () = delay 20. in
+    let%lwt () = Lwt_io.printl "3" in
     Lwt_io.printl "all done"
 
   (* Answer:
@@ -213,14 +189,33 @@ module LwtExercises = struct
        The total elapsed time is about 31 seconds. *)
 
   (********************************************************************
+   * exercise: timing challenge 3
+   ********************************************************************)
+
+  let timing3 () =
+    let _t1 = let%lwt () = delay 1. in Lwt_io.printl "1" in
+    let _t2 = let%lwt () = delay 10. in Lwt_io.printl "2" in
+    let _t3 = let%lwt () = delay 20. in Lwt_io.printl "3" in
+    Lwt_io.printl "all done"
+
+  (* Answer:
+     - "all done" prints immediately.
+     - about a second later, "1" prints.
+     - about 9 more seconds later, "2" prints.
+     - about 10 more seconds later, "3" prints.
+       The total elapsed time is about 20 seconds. *)
+
+
+
+  (********************************************************************
    * exercise: timing challenge 4
    ********************************************************************)
 
   let timing4 () =
-    let t1 = delay 1. >>= fun () -> Lwt_io.printl "1" in
-    let t2 = delay 10. >>= fun () -> Lwt_io.printl "2" in
-    let t3 = delay 20. >>= fun () -> Lwt_io.printl "3" in
-    Lwt.join [t1; t2; t3] >>= fun () ->
+    let t1 = let%lwt () = delay 1. in Lwt_io.printl "1" in
+    let t2 = let%lwt () = delay 10. in Lwt_io.printl "2" in
+    let t3 = let%lwt () = delay 20. in Lwt_io.printl "3" in
+    let%lwt () = Lwt.join [t1; t2; t3] in
     Lwt_io.printl "all done"
 
   (* Answer:
@@ -238,16 +233,16 @@ module LwtExercises = struct
   open Lwt_unix
 
   let log () : input_channel Lwt.t =
-    openfile "log" [O_RDONLY] 0 >>= fun fd ->
+    let%lwt fd = openfile "log" [O_RDONLY] 0 in
     Lwt.return (of_fd input fd)
 
   let rec loop (ic : input_channel) =
-    read_line ic >>= fun str ->
-    printlf "%s" str >>= fun () ->
+    let%lwt str = read_line ic in
+    let%lwt () = printlf "%s" str in
     loop ic
 
   let monitor () : unit Lwt.t =
-    log () >>= loop
+    Lwt.bind (log ()) loop
 
   let handler : exn -> unit Lwt.t = function
     | End_of_file -> Lwt.return ()
@@ -269,7 +264,7 @@ end
 module type Monad = sig
   type 'a t
   val return : 'a -> 'a t
-  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
 end
 
 module Maybe : Monad =
@@ -278,7 +273,7 @@ struct
 
   let return x = Some x
 
-  let (>>=) m f =
+  let ( >>= ) m f =
     match m with
     | Some x -> f x
     | None -> None
@@ -303,8 +298,8 @@ let add (x : int t) (y : int t) : int t =
 module type ExtMonad = sig
   type 'a t
   val return : 'a -> 'a t
-  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-  val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+  val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
   val join : 'a t t -> 'a t
 end
 
@@ -314,12 +309,12 @@ struct
 
   let return x = Some x
 
-  let (>>=) m f =
+  let ( >>= ) m f =
     match m with
     | Some x -> f x
     | None -> None
 
-  let (>>|) m f =
+  let ( >>| ) m f =
     match m with
     | Some x -> Some (f x)
     | None -> None
@@ -340,12 +335,12 @@ struct
 
   let return x = Some x
 
-  let (>>=) m f =
+  let ( >>= ) m f =
     match m with
     | Some x -> f x
     | None -> None
 
-  let (>>|) x f =
+  let ( >>| ) x f =
     x >>= fun a ->
     return (f a)
 
@@ -361,7 +356,7 @@ end
 
 module type FmapJoinMonad = sig
   type 'a t
-  val (>>|) : 'a t -> ('a -> 'b) -> 'b t
+  val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
   val join : 'a t t -> 'a t
   val return : 'a -> 'a t
 end
@@ -369,12 +364,12 @@ end
 module type BindMonad = sig
   type 'a t
   val return : 'a -> 'a t
-  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
 end
 
 module MakeMonad (M : FmapJoinMonad) : BindMonad = struct
   include M
-  let (>>=) m f =
+  let ( >>= ) m f =
     m >>| f |> join
 end
 
@@ -391,10 +386,10 @@ module ListMonad : ExtMonad = struct
   let join =
     List.flatten
 
-  let (>>|) m f =
+  let ( >>| ) m f =
     List.map f m
 
-  let (>>=) m f =
+  let ( >>= ) m f =
     m |> List.map f |> join
     (* or, m >>| f |> join *)
 end
@@ -406,7 +401,7 @@ end
 module Trivial : Monad = struct
   type 'a t = Wrap of 'a
   let return x = Wrap x
-  let (>>=) (Wrap x) f = f x
+  let ( >>= ) (Wrap x) f = f x
 end
 
 (*
