@@ -101,6 +101,13 @@ let sum_cube_odd_p n =
   |> List.map (fun i -> i * i * i)
   |> List.fold_left (+) 0
 
+  (* we could use List.init to avoid extra allocations *)
+let sum_cube_odd n = 
+  List.init ((n+1)/2) (fun x -> 2*x+1)
+  |> List.fold_left (fun acc n -> acc + n*n*n) 0
+                    
+
+
 
 (********************************************************************
  * exercise: exists
