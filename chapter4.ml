@@ -280,3 +280,67 @@ let inner matrix row = List.map (dot row) (transpose matrix)
 
 let multiply_matrices' m1 m2 =
   List.map (inner m2) m1
+
+(********************************************************************
+ * exercise: pipeline fusion
+ ********************************************************************)
+
+let ( << ) f g x = f (g x)
+let ( &&& ) p q x = p x && q x
+
+let id x = x
+
+let guard p f x =
+  if p x then f x else id
+
+let map = List.map
+let filter = List.filter
+let foldr f z xs = List.fold_right f xs z
+
+let square x = x * x
+let even x = x mod 2 = 0
+let large x = x > 10
+
+let score =
+  foldr ( + ) 0
+  << filter large
+  << map square
+  << filter even
+
+(*
+   First, use the map–filter–fold law:
+
+     foldr f z << filter p << map g
+     = foldr (guard (p << g) (f << g)) z
+
+   With f = ( + ), z = 0, p = large, and g = square:
+
+     score
+     = foldr (guard (large << square) (( + ) << square)) 0
+       << filter even
+
+   Next, use the filter–fold law:
+
+     foldr f z << filter p = foldr (guard p f) z
+
+   This gives:
+
+     score
+     = foldr
+         (guard even
+           (guard (large << square) (( + ) << square)))
+         0
+
+   Finally, two guards can be combined:
+
+     guard p (guard q f) = guard (p &&& q) f
+
+   An input is therefore included only if it is even and its square
+   is greater than 10.
+*)
+
+let score_fused =
+  foldr
+    (guard (even &&& (large << square)) (( + ) << square))
+    0
+
