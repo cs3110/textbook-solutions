@@ -1,4 +1,106 @@
 (********************************************************************
+ * exercise: stack option
+ ********************************************************************)
+
+ module Stack = struct
+  type 'a t = 'a list
+
+  let empty = []
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+
+  let push item stack = item :: stack
+
+  let peek = function
+    | [] -> None
+    | item :: _ -> Some item
+
+  let pop = function
+    | [] -> None
+    | item :: rest -> Some rest
+end
+
+(********************************************************************
+ * exercise: queue option
+ ********************************************************************)
+
+ module Queue = struct
+  type 'a t = 'a list
+
+  let empty = []
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+
+  let enqueue item queue = queue @ [item]
+
+  let peek = function
+    | [] -> None
+    | item :: _ -> Some item
+
+  let dequeue = function
+    | [] -> None
+    | item :: rest -> Some rest
+end
+
+(********************************************************************
+ * exercise: browser
+ ********************************************************************)
+
+module Browser = struct
+  type t = string Stack.t * string * string Stack.t
+
+  let start url = (Stack.empty, url, Stack.empty)
+
+  let current (_, page, _) = page
+
+  let visit url (back, page, _) =
+    (Stack.push page back, url, Stack.empty)
+
+  let go_back (back, page, forward) =
+    match Stack.peek back with
+    | None -> None
+    | Some previous ->
+      Some (Stack.pop back, previous, Stack.push page forward)
+
+  let go_forward (back, page, forward) =
+    match Stack.peek forward with
+    | None -> None
+    | Some next ->
+      Some (Stack.push page back, next, Stack.pop forward)
+end
+
+(********************************************************************
+ * exercise: helpdesk
+ ********************************************************************)
+
+module HelpDesk = struct
+  type t = string Queue.t * string Stack.t
+
+  let empty = (Queue.empty, Stack.empty)
+
+  let arrive name (waiting, helped) =
+    (Queue.enqueue name waiting, helped)
+
+  let serve (waiting, helped) =
+    match Queue.peek waiting with
+    | None -> None
+    | Some name ->
+        Some (name, (Queue.dequeue waiting, Stack.push name helped))
+
+  let completed (_, helped) =
+    let rec collect stack acc =
+      match Stack.peek stack with
+      | None -> acc
+      | Some name -> collect (stack |> Stack.pop |> Option.get) (name :: acc)
+    in
+    collect helped []
+end
+
+(********************************************************************
  * exercise: complex synonym
  ********************************************************************)
 
