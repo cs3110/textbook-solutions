@@ -296,6 +296,114 @@ module PairFraction = struct
 end
 
 (********************************************************************
+ * exercise: cached pair list
+ ********************************************************************)
+
+module type CachedList = sig
+  type 'a t
+
+  val empty : 'a t
+  val cons : 'a -> 'a t -> 'a t
+  val tail : 'a t -> 'a t option
+  val append : 'a t -> 'a t -> 'a t
+  val length : 'a t -> int
+  val to_list : 'a t -> 'a list
+end
+
+module PairCachedList : CachedList = struct
+  type 'a t = int * 'a list
+  (* AF: (n, xs) represents the list xs. *)
+  (* RI: n = List.length xs. *)
+
+  (* The empty list has length zero. *)
+  let empty = (0, [])
+
+  (* Adding one element increases both lengths by one. *)
+  let cons x (n, xs) = (n + 1, x :: xs)
+
+  (* Removing one element decreases both lengths by one. *)
+  let tail = function
+    | _, [] -> None
+    | n, _ :: xs -> Some (n - 1, xs)
+
+  (* The length of a concatenation is the sum of its input lengths. *)
+  let append (n1, xs1) (n2, xs2) = (n1 + n2, xs1 @ xs2)
+
+  let length (n, _) = n
+  let to_list (_, xs) = xs
+end
+
+(********************************************************************
+ * exercise: cached list nodes
+ ********************************************************************)
+
+module NodeCachedList : CachedList = struct
+  type 'a t = Empty | Node of int * 'a * 'a t
+  (* AF: Empty represents []. Node (_, x, xs) represents x :: AF(xs). *)
+  (* RI: Empty is valid. Node (n, _, xs) is valid exactly when xs is
+     valid and n is one plus the number of nodes in xs. Thus the RI
+     must hold at every node, not merely at the first node. *)
+
+  let empty = Empty
+
+  let length = function
+    | Empty -> 0
+    | Node (n, _, _) -> n
+
+  (* A valid xs has the correct root count, so this new node is valid. *)
+  let cons x xs = Node (1 + length xs, x, xs)
+
+  (* The returned suffix already satisfies the recursive RI. *)
+  let tail = function
+    | Empty -> None
+    | Node (_, _, xs) -> Some xs
+
+  (* Rebuild the first input with cons, which calculates each new count
+     from the already valid suffix. The second input is shared. *)
+  let rec append xs ys =
+    match xs with
+    | Empty -> ys
+    | Node (_, x, rest) -> cons x (append rest ys)
+
+  let rec to_list = function
+    | Empty -> []
+    | Node (_, x, xs) -> x :: to_list xs
+
+  (* The first count in this invalid representation is correct:
+     Node (2, 1, Node (7, 2, Empty))
+     There are two elements, but the second count should be 1. *)
+end
+
+(* Exercise: cached list tradeoffs
+
+   1. Worst-case time:
+
+      Operation   PairCachedList   NodeCachedList
+      empty       O(1)             O(1)
+      cons        O(1)             O(1)
+      tail        O(1)             O(1)
+      append      O(m)             O(m)
+      length      O(1)             O(1)
+      to_list     O(1)             O(n)
+
+      PairCachedList.to_list can return its underlying immutable OCaml
+      list directly. NodeCachedList.to_list constructs an ordinary list.
+
+   2. A single PairCachedList value stores one cached integer. A
+      NodeCachedList value of length n stores n cached integers. Both
+      representations use O(n) total space for a list of length n.
+
+   3. For a nonempty list, PairCachedList.tail allocates a new pair
+      containing the decremented count and the existing list tail.
+      NodeCachedList.tail returns its existing tail without allocating
+      a new list node. Both operations take O(1) time.
+
+   4. No operation in this interface becomes asymptotically faster
+      with a count at every node. In particular, both implementations
+      have constant-time length, cons, and tail, and both traverse the
+      first list when appending. *)
+
+(********************************************************************
  * exercise: make char map
  ********************************************************************)
 
