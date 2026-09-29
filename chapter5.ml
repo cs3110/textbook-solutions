@@ -404,6 +404,49 @@ end
       first list when appending. *)
 
 (********************************************************************
+ * exercise: first-class generators
+ ********************************************************************)
+
+ module type Generator = sig
+  type state
+  val initial : state
+  val next : state -> int * state
+end
+
+module Counter : Generator = struct
+  type state = int
+  let initial = 0
+  let next n = (n, n + 1)
+end
+
+module Fibonacci : Generator = struct
+  type state = int * int
+  let initial = (0, 1)
+  let next (a, b) = (a, (b, a + b))
+end
+
+let take generator n =
+  let module G = (val generator : Generator) in
+  let rec loop n state acc =
+    if n = 0 then List.rev acc
+    else
+      let value, next_state = G.next state in
+      loop (n - 1) next_state (value :: acc)
+  in
+  loop n G.initial []
+
+let generators : (string * (module Generator)) list =
+  [
+    ("counter", (module Counter : Generator));
+    ("fibonacci", (module Fibonacci : Generator));
+  ]
+
+let sample name n =
+  match List.assoc_opt name generators with
+  | None -> None
+  | Some generator -> Some (take generator n)
+
+(********************************************************************
  * exercise: make char map
  ********************************************************************)
 
