@@ -228,8 +228,9 @@ let fill_BatchedQueue n =
 module type Map = sig
   type ('k, 'v) t
   val empty  : ('k, 'v) t
-  val insert : 'k -> 'v -> ('k,'v) t -> ('k,'v) t
-  val lookup  : 'k -> ('k,'v) t -> 'v
+  val insert : 'k -> 'v -> ('k, 'v) t -> ('k, 'v) t
+  val lookup : 'k -> ('k, 'v) t -> 'v
+  val bindings : ('k, 'v) t -> ('k * 'v) list
 end
 
 module BstMap : Map = struct
@@ -239,8 +240,7 @@ module BstMap : Map = struct
 
   type ('k, 'v) t = ('k * 'v) tree
 
-  let empty =
-    Leaf
+  let empty = Leaf
 
   let rec insert k v = function
     | Leaf -> Node((k, v), Leaf, Leaf)
@@ -255,6 +255,13 @@ module BstMap : Map = struct
       if (k = k') then v'
       else if (k < k') then lookup k l
       else lookup k r
+
+  let bindings m =
+    let rec aux acc = function
+      | Leaf -> acc
+      | Node (kv, l, r) -> aux (kv :: aux acc r) l
+    in
+    aux [] m
 end
 
 (********************************************************************
