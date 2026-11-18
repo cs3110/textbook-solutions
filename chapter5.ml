@@ -213,7 +213,7 @@ let fill_BatchedQueue n =
 (* [ListQueue.enqueue] insert each new element at the end of a list,
  * which has to walk down the entire list. This naturally takes time
  * that is linear in the length of the queue. Doing this [n] times,
- * even starting with an empth queue, will take time [1 + 2 + ... + n],
+ * even starting with an empty queue, will take time [1 + 2 + ... + n],
  * which is in [O(n^2)].
  *
  * On the other hand, [BatchedQueue.enqueue] simply uses (::) which runs
